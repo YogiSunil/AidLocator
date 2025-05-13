@@ -67,7 +67,7 @@ function NearbyResourceList() {
       ) : (
         // Updated to display detailed information for each aid location
         visibleResources.map((r, idx) => (
-          <div className="mb-4 p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
+          <div key={r.name + idx} className="mb-4 p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
         <h3 className="font-bold text-xl mb-2">{r.name}</h3>
         <div className="space-y-2">
           <p><strong>Type:</strong> <span className="capitalize">{r.type}</span></p>
