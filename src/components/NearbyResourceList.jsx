@@ -30,13 +30,18 @@ function NearbyResourceList() {
     
     if (!userPosition) return matchesMode && matchesType;
     
-    // Calculate distance (using rough approximation)
-    const distance = Math.sqrt(
-      Math.pow(r.latitude - userPosition[0], 2) + 
-      Math.pow(r.longitude - userPosition[1], 2)
-    );
+    // Calculate distance in kilometers using Haversine formula
+    const R = 6371; // Earth's radius in km
+    const dLat = (r.latitude - userPosition[0]) * Math.PI / 180;
+    const dLon = (r.longitude - userPosition[1]) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(userPosition[0] * Math.PI / 180) * Math.cos(r.latitude * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
     
-    return matchesMode && matchesType && distance < 0.1; // Roughly 11km radius
+    return matchesMode && matchesType && distance < 10; // Show resources within 10km
   });
 
   return (
