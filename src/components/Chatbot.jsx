@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { updateResources } from "../features/resources/resourceSlice";
+import { setMode } from "../features/resources/resourceSlice";
 import { OpenAI } from "openai";
 
 const baseURL = "https://api.aimlapi.com/v1";
@@ -24,37 +24,21 @@ const Chatbot = ({ onQuery }) => {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      // Get user's current location
-      const getLocation = () => {
-        return new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              });
-            },
-            (error) => reject(error)
-          );
-        });
-      };
-
-      const location = await getLocation();
-
       const completion = await api.chat.completions.create({
         model: "mistralai/Mistral-7B-Instruct-v0.2",
         messages: [
           {
             role: "system",
-            content: "You are an aid assistant. Provide a list of nearby aid locations based on the user's location.",
+            content:
+              "You are an aid assistant. Help users find nearby resources like food, shelter, and water.",
           },
           {
             role: "user",
-            content: `${input}. My location is latitude ${location.latitude} and longitude ${location.longitude}.`,
+            content: input,
           },
         ],
         temperature: 0.7,
-        max_tokens: 512,
+        max_tokens: 256,
       });
 
       const botMessage = {
@@ -63,12 +47,17 @@ const Chatbot = ({ onQuery }) => {
       };
       setMessages((prev) => [...prev, botMessage]);
 
-      // Parse the AI response and dispatch to Redux
-      const parsedResources = JSON.parse(botMessage.text); // Assuming AI returns JSON
-      dispatch(updateResources(parsedResources));
+      // Dispatch the extracted query to update the mode
+      if (botMessage.text.toLowerCase().includes("help")) {
+        dispatch(setMode("help"));
+      } else {
+        dispatch(setMode("need"));
+      }
     } catch (error) {
-      console.error("Error fetching AI response:", error);
-      setMessages((prev) => [...prev, { sender: "bot", text: "Sorry, I couldn't process that." }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Sorry, I couldn't process that." },
+      ]);
     }
 
     setInput("");
