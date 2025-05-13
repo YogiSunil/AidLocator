@@ -15,7 +15,24 @@ const AiLocationSearch = () => {
           const response = await axios.post('/api/search-locations', {
             latitude,
             longitude,
-            query: `Find aid locations near latitude ${latitude} and longitude ${longitude}. Return results in JSON format with properties: name, type (food/shelter/water/clothing), address, latitude, longitude, isAvailable (true), isDonationPoint (false)`
+            query: `Find aid locations near latitude ${latitude} and longitude ${longitude}. Please provide a detailed list of aid locations with the following specifications:
+            - Include emergency services, food banks, homeless shelters, and water distribution points
+            - Each location must have: specific organization name, detailed service type, complete street address
+            - Ensure 24/7 availability status is specified
+            - Include contact information if available
+            - Specify any requirements or restrictions for receiving aid
+            - Note any special services (e.g. medical care, hygiene facilities)
+            Return results in JSON format with properties: 
+            name (string), 
+            type (one of: food/shelter/water/clothing), 
+            address (string), 
+            latitude (number), 
+            longitude (number), 
+            isAvailable (boolean), 
+            isDonationPoint (boolean),
+            description (string with additional details),
+            contactInfo (string),
+            requirements (string)`
           });
 
           const suggestedLocations = response.data;

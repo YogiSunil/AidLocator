@@ -43,13 +43,16 @@ app.post('/api/search-locations', async (req, res) => {
       const response = completion.choices[0].message.content;
       const suggestions = [
         {
-          name: "Local Food Bank",
+          name: "San Rafael Community Food Bank",
           type: "food",
-          address: "123 Main St, San Rafael, CA",
+          address: "123 Main St, San Rafael, CA 94901",
           latitude: 37.9901,
           longitude: -122.5926,
           isAvailable: true,
-          isDonationPoint: false
+          isDonationPoint: false,
+          description: "Provides fresh and non-perishable food items. Hot meals served daily 11am-2pm.",
+          contactInfo: "Tel: (415) 555-0123, Email: help@srfoodbank.org",
+          requirements: "Photo ID required. Service available to all residents."
         },
         {
           name: "Emergency Shelter",
