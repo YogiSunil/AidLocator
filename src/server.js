@@ -2,10 +2,16 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const { OpenAI } = require('openai');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+const api = new OpenAI({
+  apiKey: process.env.AIML_API_KEY,
+  baseURL: "https://api.aimlapi.com/v1"
+});
 
 app.post('/api/search-locations', async (req, res) => {
   try {
@@ -15,8 +21,8 @@ app.post('/api/search-locations', async (req, res) => {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: "gpt-3.5-turbo",
+    const completion = await api.chat.completions.create({
+      model: "mistralai/Mistral-7B-Instruct-v0.2",
       messages: [
         {
           role: "system",
