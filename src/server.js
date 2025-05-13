@@ -57,11 +57,14 @@ app.post('/api/search-locations', async (req, res) => {
         {
           name: "Emergency Shelter",
           type: "shelter",
-          address: "456 Oak Ave, San Rafael, CA",
+          address: "456 Oak Ave, San Rafael, CA 94901",
           latitude: 37.9902,
           longitude: -122.5927,
           isAvailable: true,
-          isDonationPoint: false
+          isDonationPoint: false,
+          description: "24/7 emergency shelter providing temporary housing, meals, and basic necessities. Capacity: 50 beds.",
+          contactInfo: "Tel: (415) 555-0456, Emergency: (415) 555-0789",
+          requirements: "Check-in between 4pm-10pm. No reservations needed. Bring ID if available."
         }
       ];
       res.json(suggestions);
