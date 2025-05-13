@@ -1,6 +1,5 @@
 
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 const { OpenAI } = require('openai');
 const app = express();
@@ -17,8 +16,8 @@ app.post('/api/search-locations', async (req, res) => {
   try {
     const { latitude, longitude, query } = req.body;
     
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    if (!process.env.AIML_API_KEY) {
+      return res.status(500).json({ error: 'AIML API key not configured' });
     }
 
     const completion = await api.chat.completions.create({
@@ -32,18 +31,15 @@ app.post('/api/search-locations', async (req, res) => {
           role: "user",
           content: query
         }
-      ]
-    }, {
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
+      ],
+      temperature: 0.7,
+      max_tokens: 256
     });
 
-    // Parse the AI response and format it as needed
     let suggestions = [];
     try {
-      suggestions = JSON.parse(response.data.choices[0].message.content);
+      const response = completion.choices[0].message.content;
+      suggestions = JSON.parse(response);
     } catch (error) {
       console.error('Error parsing AI response:', error);
       suggestions = [];
