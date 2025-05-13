@@ -26,7 +26,3 @@ mode = "parallel"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node src/server.js"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm start"

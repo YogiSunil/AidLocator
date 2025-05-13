@@ -11,6 +11,10 @@ app.post('/api/search-locations', async (req, res) => {
   try {
     const { latitude, longitude, query } = req.body;
     
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: "gpt-3.5-turbo",
       messages: [
@@ -30,7 +34,15 @@ app.post('/api/search-locations', async (req, res) => {
       }
     });
 
-    const suggestions = JSON.parse(response.data.choices[0].message.content);
+    // Parse the AI response and format it as needed
+    let suggestions = [];
+    try {
+      suggestions = JSON.parse(response.data.choices[0].message.content);
+    } catch (error) {
+      console.error('Error parsing AI response:', error);
+      suggestions = [];
+    }
+
     res.json(suggestions);
   } catch (error) {
     console.error('Error:', error);
