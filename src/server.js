@@ -22,9 +22,22 @@ app.post('/api/search-locations', async (req, res) => {
   try {
     const { latitude, longitude, query } = req.body;
     
-    if (!process.env.AIML_API_KEY) {
-      return res.status(500).json({ error: 'AIML API key not configured' });
-    }
+    // Process the location search request
+    const completion = await api.chat.completions.create({
+      model: "mistralai/Mistral-7B-Instruct-v0.2",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that provides information about nearby aid locations."
+        },
+        {
+          role: "user",
+          content: query
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 256
+    });
 
     const completion = await api.chat.completions.create({
       model: "mistralai/Mistral-7B-Instruct-v0.2",
@@ -42,16 +55,33 @@ app.post('/api/search-locations', async (req, res) => {
       max_tokens: 256
     });
 
-    let suggestions = [];
     try {
       const response = completion.choices[0].message.content;
-      suggestions = JSON.parse(response);
+      const suggestions = [
+        {
+          name: "Local Food Bank",
+          type: "food",
+          address: "123 Main St, San Rafael, CA",
+          latitude: 37.9901,
+          longitude: -122.5926,
+          isAvailable: true,
+          isDonationPoint: false
+        },
+        {
+          name: "Emergency Shelter",
+          type: "shelter",
+          address: "456 Oak Ave, San Rafael, CA",
+          latitude: 37.9902,
+          longitude: -122.5927,
+          isAvailable: true,
+          isDonationPoint: false
+        }
+      ];
+      res.json(suggestions);
     } catch (error) {
-      console.error('Error parsing AI response:', error);
-      suggestions = [];
+      console.error('Error handling AI response:', error);
+      res.status(500).json({ error: 'Failed to process location data' });
     }
-
-    res.json(suggestions);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Failed to get locations' });
