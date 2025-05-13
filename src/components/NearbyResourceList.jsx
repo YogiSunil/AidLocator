@@ -15,10 +15,28 @@ function NearbyResourceList() {
   const [filterType, setFilterType] = React.useState(''); // Added filterType state
 
   // Added dynamic filtering based on chatbot queries
+  const [userPosition, setUserPosition] = React.useState(null);
+
+  React.useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserPosition([pos.coords.latitude, pos.coords.longitude]),
+      (err) => console.error("Error getting location:", err)
+    );
+  }, []);
+
   const visibleResources = allResources.filter((r) => {
     const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
     const matchesType = filterType ? r.type.toLowerCase() === filterType.toLowerCase() : true;
-    return matchesMode && matchesType;
+    
+    if (!userPosition) return matchesMode && matchesType;
+    
+    // Calculate distance (using rough approximation)
+    const distance = Math.sqrt(
+      Math.pow(r.latitude - userPosition[0], 2) + 
+      Math.pow(r.longitude - userPosition[1], 2)
+    );
+    
+    return matchesMode && matchesType && distance < 0.1; // Roughly 11km radius
   });
 
   return (
