@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 const api = new OpenAI({
-  apiKey: process.env.AIML_API_KEY,
+  apiKey: "8ade1b19b91140bbafc10972d368c591",
   baseURL: "https://api.aimlapi.com/v1"
 });
 
