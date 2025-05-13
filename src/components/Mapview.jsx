@@ -16,10 +16,11 @@ L.Icon.Default.mergeOptions({
 function MapView() {
   const [position, setPosition] = useState([51.505, -0.09]);
   const [address, setAddress] = useState('');
-  const [filterType, setFilterType] = useState(''); // New state for filtering by type
+  const [filterType] = useState(''); // New state for filtering by type
   const [searchedPosition, setSearchedPosition] = useState(null); // New state for searched location
   const [routePath, setRoutePath] = useState([]); // New state for route path
-  const { items, mode } = useSelector((state) => state.resources);
+  const [filteredResources, setFilteredResources] = useState([]); // New state for filtered resources
+  const { resources, mode } = useSelector((state) => state.resources);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -38,11 +39,11 @@ function MapView() {
         setPosition(userPosition);
 
         // Automatically filter resources near the user's location
-        const nearbyResources = items.filter((r) => {
+        const nearbyResources = resources.filter((r) => {
           const distance = Math.sqrt(
             Math.pow(r.lat - userPosition[0], 2) + Math.pow(r.lng - userPosition[1], 2)
           );
-          return distance < 0.1; // Adjust the threshold for "nearby" as needed
+          return distance < 0.5; // Increased threshold for "nearby" to 0.5
         });
 
         if (nearbyResources.length === 0) {
@@ -51,7 +52,7 @@ function MapView() {
       },
       () => alert("Geolocation denied. Showing default location.")
     );
-  }, [items]);
+  }, [resources]);
 
   useEffect(() => {
     if (position && searchedPosition) {
@@ -89,15 +90,14 @@ function MapView() {
     }
   };
 
-  const handleFilterChange = (e) => {
-    setFilterType(e.target.value);
-  };
-
-  const filteredResources = items.filter((r) => {
-    const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
-    const matchesType = filterType ? r.type === filterType : true;
-    return matchesMode && matchesType;
-  });
+  useEffect(() => {
+    const filtered = resources.filter((r) => {
+      const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
+      const matchesType = filterType ? r.type.toLowerCase() === filterType.toLowerCase() : true;
+      return matchesMode && matchesType;
+    });
+    setFilteredResources(filtered);
+  }, [resources, mode, filterType]);
 
   return (
     <div>
@@ -126,60 +126,49 @@ function MapView() {
         </div>
       </div>
 
-      <div className="mb-4">
-        <select
-          value={filterType}
-          onChange={handleFilterChange}
-          className="mt-2 px-4 py-2 border rounded w-full"
-        >
-          <option value="">All Types</option>
-          <option value="Food">Food</option>
-          <option value="Shelter">Shelter</option>
-          <option value="Medical">Medical</option>
-          <option value="Water">Water</option>
-          <option value="Clothing">Clothing</option>
-        </select>
+      <div className="flex">
+        <div className="flex-grow relative">
+          <MapContainer center={searchedPosition || position || [0, 0]} zoom={13} style={{ height: '75vh', width: '100%' }}>
+            <TileLayer
+              attribution='&copy; OpenStreetMap contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {position && (
+              <Marker position={position}>
+                <Popup>Your Current Location</Popup>
+              </Marker>
+            )}
+            {searchedPosition && (
+              <Marker position={searchedPosition}>
+                <Popup>Searched Location</Popup>
+              </Marker>
+            )}
+            {searchedPosition && position && (
+              <TileLayer
+                url={`https://router.project-osrm.org/route/v1/driving/${position[1]},${position[0]};${searchedPosition[1]},${searchedPosition[0]}?overview=full&geometries=geojson`}
+                attribution="&copy; OpenStreetMap contributors"
+              />
+            )}
+            {routePath.length > 0 && (
+              <Polyline
+                positions={routePath.map(([lat, lng]) => [lat, lng])}
+                color="blue"
+              />
+            )}
+            {filteredResources.map((r, index) => (
+              <Marker key={index} position={[r.latitude, r.longitude]}>
+                <Popup>
+                  <strong>{r.name}</strong><br />
+                  Type: {r.type}<br />
+                  Address: {r.address || 'N/A'}<br />
+                  {mode === 'need' && r.isAvailable && <span>✅ Available</span>}
+                  {mode === 'help' && r.isDonationPoint && <div>📦 Donation Point</div>}
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
       </div>
-
-      <MapContainer center={searchedPosition || position} zoom={13} style={{ height: '75vh', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {position && (
-          <Marker position={position}>
-            <Popup>Your Current Location</Popup>
-          </Marker>
-        )}
-        {searchedPosition && (
-          <Marker position={searchedPosition}>
-            <Popup>Searched Location</Popup>
-          </Marker>
-        )}
-        {searchedPosition && position && (
-          <TileLayer
-            url={`https://router.project-osrm.org/route/v1/driving/${position[1]},${position[0]};${searchedPosition[1]},${searchedPosition[0]}?overview=full&geometries=geojson`}
-            attribution="&copy; OpenStreetMap contributors"
-          />
-        )}
-        {routePath.length > 0 && (
-          <Polyline
-            positions={routePath.map(([lat, lng]) => [lat, lng])}
-            color="blue"
-          />
-        )}
-        {filteredResources.map((r, index) => (
-          <Marker key={index} position={[r.lat, r.lng]}>
-            <Popup>
-              <strong>{r.name}</strong><br />
-              Type: {r.type}<br />
-              Address: {r.address || 'N/A'}<br />
-              {mode === 'need' && r.isAvailable && <span>✅ Available</span>}
-              {mode === 'help' && r.isDonationPoint && <div>📦 Donation Point</div>}
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
     </div>
   );
 }

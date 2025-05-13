@@ -4,6 +4,7 @@ import AddResourceForm from './components/AddResourceForm';
 import NearbyResourceList from './components/NearbyResourceList';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMode } from './features/resources/resourceSlice';
+import Chatbot from './components/Chatbot';
 
 function App() {
   const dispatch = useDispatch();
@@ -65,6 +66,9 @@ function App() {
             </div>
           </div>
         )}
+      </div>
+      <div className="absolute bottom-4 right-4 w-1/4 z-50">
+        <Chatbot onQuery={(query) => console.log("Chatbot query:", query)} />
       </div>
     </div>
   );
