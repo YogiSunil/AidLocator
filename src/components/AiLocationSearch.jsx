@@ -12,7 +12,7 @@ const AiLocationSearch = () => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const response = await axios.post('/api/search-locations', {
+          const response = await axios.post('http://0.0.0.0:5000/api/search-locations', {
             latitude,
             longitude,
             query: `Find aid locations near latitude ${latitude} and longitude ${longitude}. Return results in JSON format with properties: name, type (food/shelter/water/clothing), address, latitude, longitude, isAvailable (true), isDonationPoint (false)`
