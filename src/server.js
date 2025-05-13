@@ -39,22 +39,6 @@ app.post('/api/search-locations', async (req, res) => {
       max_tokens: 256
     });
 
-    const completion = await api.chat.completions.create({
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant that provides information about nearby aid locations."
-        },
-        {
-          role: "user",
-          content: query
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 256
-    });
-
     try {
       const response = completion.choices[0].message.content;
       const suggestions = [
