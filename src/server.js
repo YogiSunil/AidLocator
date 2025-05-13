@@ -14,12 +14,16 @@ app.get('/', (req, res) => {
 });
 
 const api = new OpenAI({
-  apiKey: "8ade1b19b91140bbafc10972d368c591",
-  baseURL: "https://api.aimlapi.com/v1"
+  apiKey: process.env.OPENAI_API_KEY || "your-api-key",
+  baseURL: "https://api.openai.com/v1"
 });
 
 app.post('/api/search-locations', async (req, res) => {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+    
     const { latitude, longitude, query } = req.body;
     
     // Process the location search request
