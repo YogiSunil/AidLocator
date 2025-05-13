@@ -14,8 +14,8 @@ app.get('/', (req, res) => {
 });
 
 const api = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "8ade1b19b91140bbafc10972d368c591",
-  baseURL: "https://api.openai.com/v1"
+  apiKey: "8ade1b19b91140bbafc10972d368c591",
+  baseURL: "https://api.aimlapi.com/v1"
 });
 
 app.post('/api/search-locations', async (req, res) => {
