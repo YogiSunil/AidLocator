@@ -67,9 +67,7 @@ function App() {
           </div>
         )}
       </div>
-      <div className="mb-4">
-        <AiLocationSearch />
-      </div>
+      <AiLocationSearch />
     </div>
   );
 }
