@@ -17,7 +17,24 @@ const AddResourceForm = () => {
     address: "",
     city: "",
     state: "",
+    latitude: null,
+    longitude: null,
+    isAvailable: true,
+    isDonationPoint: false,
   });
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm(prev => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }));
+      },
+      (error) => console.error("Error getting location:", error)
+    );
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

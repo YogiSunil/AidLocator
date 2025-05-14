@@ -41,14 +41,12 @@ function MapView() {
         // Automatically filter resources near the user's location
         const nearbyResources = resources.filter((r) => {
           const distance = Math.sqrt(
-            Math.pow(r.lat - userPosition[0], 2) + Math.pow(r.lng - userPosition[1], 2)
+            Math.pow(r.latitude - userPosition[0], 2) + Math.pow(r.longitude - userPosition[1], 2)
           );
           return distance < 0.5; // Increased threshold for "nearby" to 0.5
         });
 
-        if (nearbyResources.length === 0) {
-          alert('No nearby resources found.');
-        }
+        setFilteredResources(nearbyResources);
       },
       () => alert("Geolocation denied. Showing default location.")
     );
