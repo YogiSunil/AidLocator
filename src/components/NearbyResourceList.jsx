@@ -2,15 +2,8 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 
 function NearbyResourceList() {
-  const defaultResources = [
-    { name: 'Food Bank', type: 'Food', address: '123 Main St', latitude: 51.505, longitude: -0.09, isAvailable: true, isDonationPoint: false, description: "Provides food assistance to families in need.", contactInfo: "555-1234", requirements: "Must bring ID." },
-    { name: 'Shelter Home', type: 'Shelter', address: '456 Elm St', latitude: 51.51, longitude: -0.1, isAvailable: true, isDonationPoint: false, description: "Emergency shelter for individuals and families.", contactInfo: "555-5678", requirements: "Must register upon arrival." },
-    { name: 'Water Station', type: 'Water', address: '789 Oak St', latitude: 51.515, longitude: -0.11, isAvailable: true, isDonationPoint: false, description: "Provides clean drinking water.", contactInfo: "N/A", requirements: "Bring your own container." },
-    { name: 'Clothing Donation', type: 'Clothing', address: '101 Pine St', latitude: 51.52, longitude: -0.12, isAvailable: false, isDonationPoint: true, description: "Accepts donations of gently used clothing.", contactInfo: "555-9012", requirements: "Clothing must be clean and in good condition." },
-  ];
-
   const { resources, mode } = useSelector((state) => state.resources);
-  const allResources = resources && resources.length > 0 ? resources : defaultResources;
+  const allResources = resources; // Remove defaultResources logic
 
   const [filterType, setFilterType] = React.useState(''); // Added filterType state
 
@@ -24,25 +17,13 @@ function NearbyResourceList() {
     );
   }, []);
 
-  const visibleResources = allResources.filter((r) => {
-    const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
-    const matchesType = filterType ? r.type.toLowerCase() === filterType.toLowerCase() : true;
+  const visibleResources = allResources; // Temporarily disable filtering logic
 
-    if (!userPosition) return matchesMode && matchesType;
-
-    // Calculate distance in kilometers using Haversine formula
-    const R = 6371; // Earth's radius in km
-    const dLat = (r.latitude - userPosition[0]) * Math.PI / 180;
-    const dLon = (r.longitude - userPosition[1]) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(userPosition[0] * Math.PI / 180) * Math.cos(r.latitude * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-
-    return matchesMode && matchesType && distance < 10; // Show resources within 10km
-  });
+  React.useEffect(() => {
+    console.log("Resources from Redux store:", resources);
+    console.log("User position:", userPosition);
+    console.log("Visible resources after filtering:", visibleResources);
+  }, [resources, userPosition, visibleResources]);
 
   return (
     <div className="bg-white p-4 rounded shadow max-h-[75vh] overflow-y-auto">

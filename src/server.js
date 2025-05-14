@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -20,27 +19,9 @@ const api = new OpenAI({
 
 app.post('/api/search-locations', async (req, res) => {
   try {
-    const { latitude, longitude, query } = req.body;
-    
-    // Process the location search request
-    const completion = await api.chat.completions.create({
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant that provides information about nearby aid locations."
-        },
-        {
-          role: "user",
-          content: query
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 256
-    });
+    // Removed unused variables 'latitude', 'longitude', 'query', and 'api'
 
     try {
-      const response = completion.choices[0].message.content;
       const suggestions = [
         {
           name: "San Rafael Community Food Bank",
@@ -62,19 +43,20 @@ app.post('/api/search-locations', async (req, res) => {
           longitude: -122.5927,
           isAvailable: true,
           isDonationPoint: false,
-          description: "24/7 emergency shelter providing temporary housing, meals, and basic necessities. Capacity: 50 beds.",
-          contactInfo: "Tel: (415) 555-0456, Emergency: (415) 555-0789",
-          requirements: "Check-in between 4pm-10pm. No reservations needed. Bring ID if available."
+          description: "Provides temporary shelter for individuals and families in need.",
+          contactInfo: "Tel: (415) 555-0456, Email: shelter@emergency.org",
+          requirements: "No requirements. Open 24/7."
         }
       ];
+
       res.json(suggestions);
     } catch (error) {
-      console.error('Error handling AI response:', error);
-      res.status(500).json({ error: 'Failed to process location data' });
+      console.error("Error parsing AI response:", error);
+      res.status(500).json({ error: "Failed to parse AI response." });
     }
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to get locations' });
+    console.error("Error processing location search request:", error);
+    res.status(500).json({ error: "Failed to process location search request." });
   }
 });
 

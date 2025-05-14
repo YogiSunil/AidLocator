@@ -12,7 +12,9 @@ const AiLocationSearch = () => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const response = await axios.post('/api/search-locations', {
+          console.log('User location:', { latitude, longitude }); // Log user location
+
+          const response = await axios.post('http://localhost:5000/api/search-locations', {
             latitude,
             longitude,
             query: `Find aid locations near latitude ${latitude} and longitude ${longitude}. Please provide a detailed list of aid locations with the following specifications:
@@ -35,8 +37,11 @@ const AiLocationSearch = () => {
             requirements (string)`
           });
 
+          console.log('AI API response:', response.data); // Log API response
+
           const suggestedLocations = response.data;
           dispatch(updateResources(suggestedLocations));
+          console.log('Dispatched resources to Redux:', suggestedLocations); // Log dispatched data
         } catch (error) {
           console.error('Error getting AI suggestions:', error);
         } finally {
