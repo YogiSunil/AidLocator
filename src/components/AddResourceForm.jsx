@@ -1,145 +1,124 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  addResource,
-  clearResourceError,
-  editResource,
-  deleteResource,
-} from "../features/resources/resourceSlice";
+﻿import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addResource, clearResourceError } from '../features/resources/resourceSlice';
 
 const AddResourceForm = () => {
   const dispatch = useDispatch();
   const resourceError = useSelector((state) => state.resources.error);
-
   const [form, setForm] = useState({
-    type: "food",
-    name: "",
-    address: "",
-    city: "",
-    state: "",
+    type: 'food',
+    name: '',
+    description: '',
+    address: '',
+    city: '',
+    state: '',
+    phone: '',
+    email: '',
+    requirements: '',
     latitude: null,
     longitude: null,
     isAvailable: true,
     isDonationPoint: false,
   });
 
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setForm(prev => ({
-          ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        }));
-      },
-      (error) => console.error("Error getting location:", error)
-    );
-  }, []);
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    const formattedValue =
-      name === "city" || name === "state"
-        ? value.replace(/\b\w/g, (char) => char.toUpperCase())
-        : value;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: formattedValue,
-    }));
-  };
-
-  const handleAddResource = (resource) => {
-    dispatch(addResource(resource));
-  };
-
-  const handleEditResource = (resourceId, updatedResource) => {
-    dispatch(editResource({ resourceId, updatedResource }));
-  };
-
-  const handleDeleteResource = (resourceId) => {
-    dispatch(deleteResource(resourceId));
-  };
-
-  useEffect(() => {
-    if (resourceError) {
-      const timeout = setTimeout(() => {
-        dispatch(clearResourceError());
-      }, 5000);
-      return () => clearTimeout(timeout);
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setForm(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
     }
-  }, [resourceError, dispatch]);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const contactInfo = [form.phone, form.email].filter(Boolean).join('  ');
+    dispatch(addResource({ ...form, contactInfo }));
+  };
 
   return (
-    <div className="bg-black p-4 rounded-md shadow-md max-w-md mx-auto mt-4 text-white">
-      <h2 className="text-xl font-semibold mb-4">Add Resource</h2>
-      {resourceError && <p className="text-red-400 mb-2">{resourceError}</p>}
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleAddResource(form);
-      }} className="space-y-3">
-        <select
-          name="type"
-          value={form.type}
-          onChange={handleChange}
-          className="w-full p-2 bg-white text-black rounded-md"
-        >
-          <option value="food">Food</option>
-          <option value="shelter">Shelter</option>
-          <option value="water">Water</option>
-          <option value="donation">Donation</option>
-        </select>
-        <input
-          type="text"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Resource Name"
-          className="w-full p-2 bg-white text-black rounded-md"
-        />
-        <input
-          type="text"
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          placeholder="Street Address"
-          className="w-full p-2 bg-white text-black rounded-md"
-        />
-        <input
-          type="text"
-          name="city"
-          value={form.city}
-          onChange={handleChange}
-          placeholder="City"
-          className="w-full p-2 bg-white text-black rounded-md"
-        />
-        <input
-          type="text"
-          name="state"
-          value={form.state}
-          onChange={handleChange}
-          placeholder="State"
-          className="w-full p-2 bg-white text-black rounded-md"
-        />
-        <button
-          type="submit"
-          className="bg-white text-black rounded-md px-4 py-2 hover:bg-gray-200"
-        >
-          Submit
-        </button>
-      </form>
-      <button
-        onClick={() => handleEditResource(1, { name: "Updated Resource" })}
-        className="mt-4 bg-yellow-500 text-black rounded-md px-4 py-2 hover:bg-yellow-600"
-      >
-        Edit Resource
-      </button>
-      <button
-        onClick={() => handleDeleteResource(1)}
-        className="mt-4 bg-red-500 text-white rounded-md px-4 py-2 hover:bg-red-600"
-      >
-        Delete Resource
-      </button>
+    <div className="h-full flex flex-col bg-white">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2"> Add New Resource</h2>
+        <p className="text-gray-600">Help your community by adding a resource</p>
+      </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="Organization Name"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <select
+            name="type"
+            value={form.type}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          >
+            <option value="food"> Food</option>
+            <option value="shelter"> Shelter</option>
+            <option value="medical"> Medical</option>
+            <option value="water"> Water</option>
+          </select>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="Description of services"
+            rows="3"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            type="text"
+            name="address"
+            value={form.address}
+            onChange={handleChange}
+            placeholder="Street Address"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="city"
+              value={form.city}
+              onChange={handleChange}
+              placeholder="City"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              required
+            />
+            <input
+              type="text"
+              name="state"
+              value={form.state}
+              onChange={handleChange}
+              placeholder="State"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              required
+            />
+          </div>
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="Phone Number"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium"
+          >
+             Add Resource
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

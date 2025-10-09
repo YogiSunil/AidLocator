@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import MapView from './components/Mapview';
 import AddResourceForm from './components/AddResourceForm';
 import NearbyResourceList from './components/NearbyResourceList';
+import Chatbot from './components/Chatbot';
+import EmergencyHeader from './components/EmergencyHeader';
+import QuickAccessCategories from './components/QuickAccessCategories';
+import LocationDisplay from './components/LocationDisplay';
+import SearchInterface from './components/SearchInterface';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMode } from './features/resources/resourceSlice';
 import AiLocationSearch from './components/AiLocationSearch';
@@ -9,64 +14,130 @@ import AiLocationSearch from './components/AiLocationSearch';
 function App() {
   const dispatch = useDispatch();
   const mode = useSelector((state) => state.resources.mode);
+  const [showChatbot, setShowChatbot] = useState(false);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-pink-100 via-blue-100 to-blue-200">
-      <div className="absolute top-1/2 left-1/2 w-[200%] h-[200%] bg-conic-gradient from-pink-300 via-yellow-200 to-blue-300 transform -translate-x-1/2 -translate-y-1/2 animate-spin-slow blur-xl opacity-80"></div>
-      <div className="absolute top-1/2 left-1/2 w-[180%] h-[180%] bg-conic-gradient from-pink-300 via-yellow-200 to-blue-300 transform -translate-x-1/2 -translate-y-1/2 animate-spin-reverse-slow blur-xl opacity-60"></div>
-      <div className="relative z-10 min-h-screen p-4">
-        <h1 className="text-3xl font-bold text-center text-blue-700 mb-4">AidLocator</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Emergency Header */}
+      <EmergencyHeader />
+      
+      {/* Main Header */}
+      <header className="bg-white shadow-lg border-b-4 border-blue-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="text-2xl font-bold text-blue-600">🆘 AidLocator</div>
+              <div className="hidden md:block text-sm text-gray-600">
+                Connecting communities with resources
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowChatbot(!showChatbot)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-medium transition-colors"
+              >
+                💬 AI Assistant
+              </button>
+              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold transition-colors">
+                🚨 Emergency
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <div className="flex space-x-2 border-[3px] border-purple-400 rounded-xl select-none mb-4">
-          <label className="radio flex flex-grow items-center justify-center rounded-lg p-1 cursor-pointer">
-            <input
-              type="radio"
-              name="mode"
-              value="need"
-              className="peer hidden"
-              checked={mode === 'need'}
-              onChange={() => dispatch(setMode('need'))}
-            />
-            <span className="tracking-widest peer-checked:bg-gradient-to-r peer-checked:from-[blueviolet] peer-checked:to-[violet] peer-checked:text-white text-gray-700 p-2 rounded-lg transition duration-150 ease-in-out">
-              Need Help
-            </span>
-          </label>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Location Display */}
+        <LocationDisplay />
 
-          <label className="radio flex flex-grow items-center justify-center rounded-lg p-1 cursor-pointer">
-            <input
-              type="radio"
-              name="mode"
-              value="help"
-              className="peer hidden"
-              checked={mode === 'help'}
-              onChange={() => dispatch(setMode('help'))}
-            />
-            <span className="tracking-widest peer-checked:bg-gradient-to-r peer-checked:from-[blueviolet] peer-checked:to-[violet] peer-checked:text-white text-gray-700 p-2 rounded-lg transition duration-150 ease-in-out">
-              Help Someone
-            </span>
-          </label>
+        {/* Mode Toggle */}
+        <div className="mb-6">
+          <div className="flex bg-white rounded-xl border-2 border-blue-200 p-2 shadow-lg max-w-md mx-auto">
+            <label className="flex-1 cursor-pointer">
+              <input
+                type="radio"
+                name="mode"
+                value="need"
+                className="sr-only peer"
+                checked={mode === 'need'}
+                onChange={() => dispatch(setMode('need'))}
+              />
+              <div className="text-center py-3 px-6 rounded-lg peer-checked:bg-blue-600 peer-checked:text-white peer-checked:shadow-lg text-blue-600 font-semibold transition-all duration-200 hover:bg-blue-50">
+                🙏 Need Help
+              </div>
+            </label>
+            <label className="flex-1 cursor-pointer">
+              <input
+                type="radio"
+                name="mode"
+                value="help"
+                className="sr-only peer"
+                checked={mode === 'help'}
+                onChange={() => dispatch(setMode('help'))}
+              />
+              <div className="text-center py-3 px-6 rounded-lg peer-checked:bg-green-600 peer-checked:text-white peer-checked:shadow-lg text-green-600 font-semibold transition-all duration-200 hover:bg-green-50">
+                🤝 Help Someone
+              </div>
+            </label>
+          </div>
         </div>
 
-        {mode === 'need' ? (
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <MapView />
+        {/* Search Interface */}
+        <SearchInterface />
+
+        {/* Quick Access Categories */}
+        {mode === 'need' && <QuickAccessCategories />}
+
+        {/* Main Content Area */}
+        <div className="mt-8">
+          {mode === 'need' ? (
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <MapView />
+                </div>
+              </div>
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <NearbyResourceList />
+                </div>
+              </div>
             </div>
-            <div className="md:col-span-1">
-              <NearbyResourceList />
+          ) : (
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <MapView />
+                </div>
+              </div>
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <AddResourceForm />
+                </div>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <MapView />
-            </div>
-            <div className="bg-white p-4 rounded shadow">
-              <AddResourceForm />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Chatbot */}
+      {showChatbot && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 md:w-96">
+          <div className="bg-white rounded-lg shadow-2xl border">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-semibold text-gray-800">AI Assistant</h3>
+              <button
+                onClick={() => setShowChatbot(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <Chatbot />
+          </div>
+        </div>
+      )}
+
       <AiLocationSearch />
     </div>
   );
