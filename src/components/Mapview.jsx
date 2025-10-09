@@ -217,7 +217,7 @@ function MapView() {
         <MapContainer
           center={userLocation}
           zoom={14}
-          style={{ height: "70vh", width: "100%" }}
+          style={{ height: "80vh", width: "100%" }}
           className="z-10"
         >
           <TileLayer

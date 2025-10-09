@@ -45,33 +45,81 @@ const Chatbot = ({ onQuery }) => {
     setIsTyping(true);
 
     try {
-      // Generate a mock response instead of using the API
-      const generateMockResponse = (userMessage) => {
+      // Get user location and search for real resources
+      const searchForRealResources = async (userMessage) => {
         const lowerMessage = userMessage.toLowerCase();
         
+        // Determine resource type from message
+        let resourceType = 'food'; // default
+        let amenityType = 'food_bank';
+        let emoji = '🍽️';
+        let resourceName = 'food assistance';
+        
         if (lowerMessage.includes('food') || lowerMessage.includes('hungry') || lowerMessage.includes('eat')) {
-          return "🍽️ I understand you need food assistance. I can help you find food banks, soup kitchens, and meal programs in your area. Would you like me to search for food resources near you? You can also check the Food category in the main search.";
+          resourceType = 'food';
+          amenityType = 'food_bank';
+          emoji = '🍽️';
+          resourceName = 'food assistance';
         } else if (lowerMessage.includes('shelter') || lowerMessage.includes('housing') || lowerMessage.includes('homeless')) {
-          return "🏠 I can help you find emergency shelters and housing assistance. Many shelters provide temporary housing, meals, and support services. Would you like me to find shelters in your area? Check the Shelter category for immediate options.";
+          resourceType = 'shelter';
+          amenityType = 'social_facility';
+          emoji = '🏠';
+          resourceName = 'emergency shelters';
         } else if (lowerMessage.includes('medical') || lowerMessage.includes('health') || lowerMessage.includes('doctor')) {
-          return "🏥 For medical assistance, I can help you locate free clinics, community health centers, and medical resources. If this is a medical emergency, please call 911 immediately. Otherwise, let me help you find healthcare resources nearby.";
-        } else if (lowerMessage.includes('emergency') || lowerMessage.includes('crisis') || lowerMessage.includes('help')) {
-          return "🚨 If you're in immediate danger, please call 911. For crisis support, you can also call: • Crisis Text Line: Text HOME to 741741 • National Suicide Prevention Lifeline: 988. How else can I assist you in finding resources?";
-        } else if (lowerMessage.includes('water') || lowerMessage.includes('thirsty')) {
-          return "💧 I can help you find water distribution points and locations with free drinking water. Many community centers and some businesses provide free water access. Would you like me to search for water resources in your area?";
-        } else if (lowerMessage.includes('clothing') || lowerMessage.includes('clothes')) {
-          return "👕 I can help you find clothing banks, thrift stores with free programs, and donation centers. Many organizations provide free clothing for families in need. Let me help you locate clothing resources nearby.";
+          resourceType = 'medical';
+          amenityType = 'clinic';
+          emoji = '🏥';
+          resourceName = 'medical facilities';
+        } else if (lowerMessage.includes('emergency') || lowerMessage.includes('crisis')) {
+          return "🚨 If you're in immediate danger, please call 911. For crisis support: • Crisis Text Line: Text HOME to 741741 • National Suicide Prevention Lifeline: 988. I can also help you find local emergency resources - what type of help do you need?";
         } else {
-          return "I'm here to help you find community resources! I can assist you with finding: 🍽️ Food banks and meal programs, 🏠 Emergency shelters, 🏥 Medical clinics, 💧 Water access points, 👕 Clothing assistance. What type of help are you looking for today?";
+          return "I'm here to help you find real community resources! I can search for: 🍽️ Food banks, 🏠 Emergency shelters, 🏥 Medical clinics. What type of help are you looking for today?";
+        }
+
+        try {
+          // Get user's location
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 60000
+            });
+          });
+
+          const { latitude, longitude } = position.coords;
+          
+          // Import the API service dynamically
+          const { default: ResourceAPIService } = await import('../services/resourceAPI');
+          
+          // Search for actual resources
+          const resources = await ResourceAPIService.fetchOpenStreetMapResources(
+            latitude, 
+            longitude, 
+            amenityType
+          );
+
+          if (resources && resources.length > 0) {
+            const nearestResource = resources[0]; // Get the closest one
+            const distance = ResourceAPIService.calculateDistance(
+              latitude, longitude, 
+              nearestResource.latitude, nearestResource.longitude
+            ).toFixed(1);
+
+            return `${emoji} Great! I found ${resources.length} ${resourceName} options near you.\n\n📍 **Nearest: ${nearestResource.name}**\n📍 ${nearestResource.address}\n📏 ${distance}km away\n\n${nearestResource.hours ? '🕒 ' + nearestResource.hours : ''}\n${nearestResource.contactInfo ? '📞 ' + nearestResource.contactInfo : ''}\n\nCheck the map above for all ${resources.length} locations!`;
+          } else {
+            return `${emoji} I'm searching for ${resourceName} in your area, but didn't find any in OpenStreetMap data right now. Try checking:\n\n• 211 (dial 2-1-1) for local resources\n• Local community centers\n• Religious organizations\n• City/county social services\n\nYou can also use the search categories above to explore more options!`;
+          }
+          
+        } catch (locationError) {
+          return `${emoji} I'd like to help you find ${resourceName}, but I need location access to show you nearby options. Please:\n\n1. Click "Allow" when asked for location\n2. Or search by address in the main search\n3. Try the ${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} category button above\n\nI'm here to help once you enable location access! 📍`;
         }
       };
 
-      // Simulate a brief delay for realism
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      const response = await searchForRealResources(messageText);
+      
       const botMessage = {
         sender: "bot",
-        text: generateMockResponse(messageText),
+        text: response,
         timestamp: new Date()
       };
       setMessages((prev) => [...prev, botMessage]);

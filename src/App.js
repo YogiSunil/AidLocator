@@ -46,7 +46,7 @@ function App() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
         {/* Location Display */}
         <LocationDisplay />
 
@@ -91,27 +91,27 @@ function App() {
         {/* Main Content Area */}
         <div className="mt-8">
           {mode === 'need' ? (
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
+              <div className="flex-1 xl:w-2/3">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
                   <MapView />
                 </div>
               </div>
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="xl:w-1/3 min-w-0">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
                   <NearbyResourceList />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
+              <div className="flex-1 xl:w-2/3">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
                   <MapView />
                 </div>
               </div>
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="xl:w-1/3 min-w-0">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
                   <AddResourceForm />
                 </div>
               </div>

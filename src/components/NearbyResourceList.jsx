@@ -62,22 +62,22 @@ function NearbyResourceList() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">
           {mode === 'need' ? '🏥 Nearby Resources' : '🤝 Donation Points'}
         </h2>
-        <p className="text-gray-600">
+        <p className="text-lg text-gray-700 font-medium">
           {filteredResources.length} {filteredResources.length === 1 ? 'location' : 'locations'} found
         </p>
       </div>
 
       {/* Filters and Controls */}
-      <div className="p-4 border-b border-gray-200 space-y-3">
-        <div className="flex flex-wrap gap-3">
+      <div className="p-6 border-b border-gray-200 bg-white space-y-4">
+        <div className="flex flex-wrap gap-4">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="flex-1 min-w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="flex-1 min-w-40 px-4 py-3 text-base border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
           >
             <option value="">All Types</option>
             <option value="food">🍽️ Food</option>
@@ -90,7 +90,7 @@ function NearbyResourceList() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="flex-1 min-w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="flex-1 min-w-40 px-4 py-3 text-base border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
           >
             <option value="distance">📍 By Distance</option>
             <option value="name">📝 By Name</option>
@@ -107,94 +107,94 @@ function NearbyResourceList() {
             <p className="text-gray-400">Try adjusting your filters or search area</p>
           </div>
         ) : (
-          <div className="p-4 space-y-4">
+          <div className="p-6 space-y-6">
             {filteredResources.map((resource, idx) => (
               <div 
                 key={idx} 
-                className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
               >
                 {/* Resource Header */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 pr-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-2xl">
                           {resource.type === 'food' ? '🍽️' : 
                            resource.type === 'shelter' ? '🏠' : 
                            resource.type === 'medical' ? '🏥' : 
                            resource.type === 'water' ? '💧' : '🆘'}
                         </span>
-                        <h3 className="font-bold text-lg text-gray-800">{resource.name}</h3>
+                        <h3 className="font-bold text-xl text-gray-900 leading-relaxed">{resource.name}</h3>
                       </div>
                       
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span>📍</span>
-                          <span>{resource.address || "Address not provided"}</span>
+                      <div className="space-y-3 text-base">
+                        <div className="flex items-start gap-3 text-gray-700">
+                          <span className="text-lg">📍</span>
+                          <span className="leading-relaxed">{resource.address || "Address not provided"}</span>
                         </div>
                         
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span>📏</span>
-                          <span>{calculateDistance(resource)}</span>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <span className="text-lg">📏</span>
+                          <span className="font-medium">{calculateDistance(resource)}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getStatusColor(resource.isAvailable)}`}>
-                      {getStatusIcon(resource.isAvailable)} 
+                    <div className={`px-4 py-3 rounded-xl border text-base font-semibold shadow-sm ${getStatusColor(resource.isAvailable)}`}>
+                      <span className="text-lg mr-2">{getStatusIcon(resource.isAvailable)}</span>
                       {resource.isAvailable ? 'Available' : 'Unavailable'}
                     </div>
                   </div>
 
                   {/* Description */}
                   {resource.description && (
-                    <p className="text-gray-700 text-sm mb-3 line-clamp-2">
+                    <p className="text-gray-700 text-base mb-4 leading-relaxed">
                       {resource.description}
                     </p>
                   )}
 
                   {/* Requirements */}
                   {resource.requirements && (
-                    <div className="mb-3">
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Requirements</span>
-                      <p className="text-sm text-gray-600">{resource.requirements}</p>
+                    <div className="mb-4">
+                      <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Requirements</span>
+                      <p className="text-base text-gray-700 leading-relaxed">{resource.requirements}</p>
                     </div>
                   )}
 
                   {/* Contact Info */}
                   {resource.contactInfo && (
-                    <div className="mb-3">
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</span>
-                      <p className="text-sm text-blue-600">{resource.contactInfo}</p>
+                    <div className="mb-4">
+                      <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Contact</span>
+                      <p className="text-base text-blue-700 font-medium">{resource.contactInfo}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                  <div className="flex flex-wrap gap-2">
+                <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-3">
                     {resource.contactInfo && (
                       <a
                         href={`tel:${resource.contactInfo.replace(/\D/g, '')}`}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
                       >
-                        📞 Call
+                        📞 Call Now
                       </a>
                     )}
                     
                     <button
                       onClick={() => setSelectedResource(resource)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
                     >
-                      🗺️ Directions
+                      🗺️ Get Directions
                     </button>
                     
-                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
-                      ℹ️ Details
+                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md">
+                      ℹ️ More Details
                     </button>
                     
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
-                      📤 Share
+                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md">
+                      📤 Share Resource
                     </button>
                   </div>
                 </div>
