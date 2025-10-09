@@ -19,16 +19,16 @@ const AddResourceForm = ({ onClose }) => {
   const [errors, setErrors] = useState({});
 
   const resourceTypes = [
-    { value: 'food', label: '🍽️ Food & Meals', icon: '🍽️' },
-    { value: 'shelter', label: '🏠 Shelter & Housing', icon: '🏠' },
-    { value: 'healthcare', label: '🏥 Healthcare', icon: '🏥' },
-    { value: 'mental_health', label: '🧠 Mental Health', icon: '🧠' },
-    { value: 'education', label: '📚 Education', icon: '📚' },
-    { value: 'employment', label: '💼 Employment', icon: '💼' },
-    { value: 'clothing', label: '👕 Clothing', icon: '👕' },
-    { value: 'transportation', label: '🚌 Transportation', icon: '🚌' },
-    { value: 'legal', label: '⚖️ Legal Aid', icon: '⚖️' },
-    { value: 'financial', label: '💰 Financial Aid', icon: '💰' }
+    { value: 'food', label: ' Food & Meals', icon: '' },
+    { value: 'shelter', label: ' Shelter & Housing', icon: '' },
+    { value: 'healthcare', label: ' Healthcare', icon: '' },
+    { value: 'mental_health', label: ' Mental Health', icon: '' },
+    { value: 'education', label: ' Education', icon: '' },
+    { value: 'employment', label: ' Employment', icon: '' },
+    { value: 'clothing', label: ' Clothing', icon: '' },
+    { value: 'transportation', label: ' Transportation', icon: '' },
+    { value: 'legal', label: ' Legal Aid', icon: '' },
+    { value: 'financial', label: ' Financial Aid', icon: '' }
   ];
 
   const validateForm = () => {
@@ -101,7 +101,7 @@ const AddResourceForm = ({ onClose }) => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <span className="text-4xl">➕</span>
+            <span className="text-4xl"></span>
             Add New Resource
           </h2>
           {onClose && (
@@ -109,7 +109,7 @@ const AddResourceForm = ({ onClose }) => {
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors"
             >
-              ✕
+              
             </button>
           )}
         </div>
@@ -157,7 +157,7 @@ const AddResourceForm = ({ onClose }) => {
               }`}
               required
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">⚠️ {errors.name}</p>}
+            {errors.name && <p className="text-red-500 text-sm mt-1"> {errors.name}</p>}
           </div>
 
           <div className="space-y-2">
@@ -174,7 +174,7 @@ const AddResourceForm = ({ onClose }) => {
               }`}
               required
             />
-            {errors.address && <p className="text-red-500 text-sm mt-1">⚠️ {errors.address}</p>}
+            {errors.address && <p className="text-red-500 text-sm mt-1"> {errors.address}</p>}
           </div>
         </div>
 
@@ -193,7 +193,7 @@ const AddResourceForm = ({ onClose }) => {
             }`}
             required
           />
-          {errors.description && <p className="text-red-500 text-sm mt-1">⚠️ {errors.description}</p>}
+          {errors.description && <p className="text-red-500 text-sm mt-1"> {errors.description}</p>}
         </div>
 
         {/* Contact and Hours */}
@@ -212,7 +212,7 @@ const AddResourceForm = ({ onClose }) => {
               }`}
               required
             />
-            {errors.contactInfo && <p className="text-red-500 text-sm mt-1">⚠️ {errors.contactInfo}</p>}
+            {errors.contactInfo && <p className="text-red-500 text-sm mt-1"> {errors.contactInfo}</p>}
           </div>
 
           <div className="space-y-2">
@@ -229,7 +229,7 @@ const AddResourceForm = ({ onClose }) => {
               }`}
               required
             />
-            {errors.hours && <p className="text-red-500 text-sm mt-1">⚠️ {errors.hours}</p>}
+            {errors.hours && <p className="text-red-500 text-sm mt-1"> {errors.hours}</p>}
           </div>
         </div>
 
@@ -257,7 +257,7 @@ const AddResourceForm = ({ onClose }) => {
             className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
           />
           <label htmlFor="isDonationPoint" className="text-lg font-medium text-gray-700 cursor-pointer">
-            <span className="mr-2">📦</span>
+            <span className="mr-2"></span>
             This location accepts donations
           </label>
         </div>
@@ -275,12 +275,12 @@ const AddResourceForm = ({ onClose }) => {
           >
             {isSubmitting ? (
               <>
-                <span className="animate-spin">⏳</span>
+                <span className="animate-spin"></span>
                 Adding Resource...
               </>
             ) : (
               <>
-                <span>✨</span>
+                <span></span>
                 Add Resource
               </>
             )}
@@ -302,5 +302,3 @@ const AddResourceForm = ({ onClose }) => {
 };
 
 export default AddResourceForm;
-
-
