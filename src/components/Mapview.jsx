@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+﻿import React, { useEffect, useState, useRef, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useSelector } from "react-redux";
@@ -25,6 +25,103 @@ const userLocationIcon = new L.Icon({
   popupAnchor: [0, -16],
 });
 
+// Simple Route Component using OSRM API directly (no problematic leaflet-routing-machine)
+const SimpleRouting = ({ start, end, onRoutingComplete }) => {
+  const map = useMap();
+  const routeLayerRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !start || !end) return;
+
+    // Clean up existing route layer
+    const cleanup = () => {
+      if (routeLayerRef.current) {
+        try {
+          map.removeLayer(routeLayerRef.current);
+        } catch (error) {
+          console.log('Layer cleanup error (safe to ignore):', error);
+        }
+        routeLayerRef.current = null;
+      }
+    };
+
+    cleanup();
+
+    // Fetch route from OSRM API directly
+    const fetchRoute = async () => {
+      try {
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+        );
+        
+        if (!response.ok) throw new Error('Routing service unavailable');
+        
+        const data = await response.json();
+        
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          
+          // Create route line on map
+          const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+          
+          const routeLine = L.polyline(routeCoordinates, {
+            color: '#3B82F6',
+            weight: 5,
+            opacity: 0.8,
+            smoothFactor: 1
+          });
+          
+          routeLine.addTo(map);
+          routeLayerRef.current = routeLine;
+          
+          // Fit map to show the route
+          map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
+          
+          // Call completion handler with route info
+          if (onRoutingComplete) {
+            onRoutingComplete({
+              distance: (route.distance / 1000).toFixed(1), // Convert to km
+              time: Math.round(route.duration / 60), // Convert to minutes
+              coordinates: routeCoordinates
+            });
+          }
+        } else {
+          throw new Error('No route found');
+        }
+      } catch (error) {
+        console.error('Routing error:', error);
+        
+        // Fallback: draw straight line
+        const straightLine = L.polyline([start, end], {
+          color: '#EF4444',
+          weight: 3,
+          opacity: 0.6,
+          dashArray: '10, 10'
+        });
+        
+        straightLine.addTo(map);
+        routeLayerRef.current = straightLine;
+        
+        // Calculate straight-line distance
+        const distance = (map.distance(start, end) / 1000).toFixed(1);
+        
+        if (onRoutingComplete) {
+          onRoutingComplete({
+            distance: distance,
+            time: 'Unknown',
+            error: 'Showing straight-line distance'
+          });
+        }
+      }
+    };
+
+    fetchRoute();
+    return cleanup;
+  }, [map, start, end, onRoutingComplete]);
+
+  return null;
+};
+
 function MapView() {
   const [userLocation, setUserLocation] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +129,37 @@ function MapView() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [locationError, setLocationError] = useState(null);
+  const [routingInfo, setRoutingInfo] = useState(null);
+  const [routeDestination, setRouteDestination] = useState(null);
   const { resources, mode } = useSelector((state) => state.resources);
+
+  // Function to show directions to a resource
+  const showDirectionsTo = useCallback((resource) => {
+    if (!userLocation) {
+      alert('Location access needed for directions. Please enable location services.');
+      return;
+    }
+    
+    setRouteDestination([resource.latitude, resource.longitude]);
+    setRoutingInfo(null); // Reset routing info
+  }, [userLocation]);
+
+  // Clear directions
+  const clearDirections = useCallback(() => {
+    setRouteDestination(null);
+    setRoutingInfo(null);
+  }, []);
+
+  // Expose showDirections function globally so NearbyResourceList can call it
+  useEffect(() => {
+    window.showMapDirections = showDirectionsTo;
+    window.clearMapDirections = clearDirections;
+    
+    return () => {
+      window.showMapDirections = null;
+      window.clearMapDirections = null;
+    };
+  }, [userLocation, showDirectionsTo, clearDirections]);
 
   // Get user location
   useEffect(() => {
@@ -304,7 +431,60 @@ function MapView() {
               </Marker>
             );
           })}
+
+          {/* Routing Component */}
+          {routeDestination && userLocation && (
+            <SimpleRouting
+              start={userLocation}
+              end={routeDestination}
+              onRoutingComplete={setRoutingInfo}
+            />
+          )}
         </MapContainer>
+      )}
+
+      {/* Routing Information Panel */}
+      {routingInfo && (
+        <div className={`border-l-4 p-4 mb-4 ${routingInfo.error ? 'bg-red-50 border-red-400' : 'bg-blue-50 border-blue-400'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className={`text-lg font-semibold mb-2 ${routingInfo.error ? 'text-red-800' : 'text-blue-800'}`}>
+                🗺️ Route Information
+              </h4>
+              
+              {routingInfo.error ? (
+                <div className="text-sm text-red-700">
+                  ⚠️ {routingInfo.error}
+                </div>
+              ) : (
+                <div className="flex gap-6 text-sm text-blue-700">
+                  <div className="flex items-center gap-1">
+                    <span>📏</span>
+                    <span><strong>{routingInfo.distance} km</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>🕒</span>
+                    <span><strong>{routingInfo.time} minutes</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>🚗</span>
+                    <span>Driving directions</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={clearDirections}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white ${
+                routingInfo.error 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              Clear Route
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Legend */}

@@ -6,7 +6,7 @@ function NearbyResourceList() {
   const [filterType, setFilterType] = useState('');
   const [sortBy, setSortBy] = useState('distance');
   const [userPosition, setUserPosition] = useState(null);
-  const [selectedResource, setSelectedResource] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(null);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -14,6 +14,76 @@ function NearbyResourceList() {
       (err) => console.error("Error getting location:", err)
     );
   }, []);
+
+  // Get Directions using the map component
+  const handleGetDirections = (resource) => {
+    if (!userPosition) {
+      alert('Location access needed for directions. Please enable location services.');
+      return;
+    }
+
+    // Use the map's routing function if available
+    if (window.showMapDirections) {
+      try {
+        // Clear any existing routes first
+        if (window.clearMapDirections) {
+          window.clearMapDirections();
+        }
+        
+        // Show new directions
+        window.showMapDirections(resource);
+        
+        // Scroll to map section smoothly
+        setTimeout(() => {
+          const mapElement = document.querySelector('.leaflet-container');
+          if (mapElement) {
+            mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error showing directions:', error);
+        // Fallback to external directions
+        const [userLat, userLng] = userPosition;
+        const { latitude: destLat, longitude: destLng } = resource;
+        const directionsUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLat}%2C${userLng}%3B${destLat}%2C${destLng}`;
+        window.open(directionsUrl, '_blank');
+      }
+    } else {
+      // Fallback to opening external directions
+      const [userLat, userLng] = userPosition;
+      const { latitude: destLat, longitude: destLng } = resource;
+      const directionsUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLat}%2C${userLng}%3B${destLat}%2C${destLng}`;
+      window.open(directionsUrl, '_blank');
+    }
+  };
+
+  // Show detailed information
+  const handleShowDetails = (resource) => {
+    setShowDetailModal(resource);
+  };
+
+  // Share resource
+  const handleShareResource = (resource) => {
+    const shareText = `📍 ${resource.name}\n🏠 ${resource.address}\n\n${resource.description || 'Community resource'}\n\n${resource.contactInfo ? `📞 ${resource.contactInfo}` : ''}\n${resource.hours ? `🕒 ${resource.hours}` : ''}\n\nShared via AidLocator`;
+    
+    if (navigator.share) {
+      // Use native share API if available
+      navigator.share({
+        title: resource.name,
+        text: shareText,
+        url: `https://www.openstreetmap.org/?mlat=${resource.latitude}&mlon=${resource.longitude}&zoom=16`
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      // Fallback to copying to clipboard
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('Resource details copied to clipboard!');
+      }).catch(() => {
+        // Fallback to alert with text
+        alert(`Share this resource:\n\n${shareText}`);
+      });
+    }
+  };
 
   // Filter and sort resources
   const filteredResources = resources
@@ -183,17 +253,23 @@ function NearbyResourceList() {
                     )}
                     
                     <button
-                      onClick={() => setSelectedResource(resource)}
+                      onClick={() => handleGetDirections(resource)}
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
                     >
                       🗺️ Get Directions
                     </button>
                     
-                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md">
+                    <button 
+                      onClick={() => handleShowDetails(resource)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                    >
                       ℹ️ More Details
                     </button>
                     
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md">
+                    <button 
+                      onClick={() => handleShareResource(resource)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                    >
                       📤 Share Resource
                     </button>
                   </div>
@@ -204,55 +280,141 @@ function NearbyResourceList() {
         )}
       </div>
 
-      {/* Resource Detail Modal */}
-      {selectedResource && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{selectedResource.name}</h3>
+      {/* Comprehensive Resource Detail Modal */}
+      {showDetailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">
+                    {showDetailModal.type === 'food' ? '🍽️' : 
+                     showDetailModal.type === 'shelter' ? '🏠' : 
+                     showDetailModal.type === 'medical' ? '🏥' : 
+                     showDetailModal.type === 'water' ? '💧' : '🆘'}
+                  </span>
+                  <h3 className="text-2xl font-bold">{showDetailModal.name}</h3>
+                </div>
                 <button
-                  onClick={() => setSelectedResource(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  onClick={() => setShowDetailModal(null)}
+                  className="text-white hover:text-gray-200 text-3xl font-light"
                 >
                   ×
                 </button>
               </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">📍 Location</h4>
-                  <p className="text-gray-600">{selectedResource.address}</p>
-                </div>
-                
-                {selectedResource.description && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">ℹ️ Description</h4>
-                    <p className="text-gray-600">{selectedResource.description}</p>
-                  </div>
-                )}
-                
-                {selectedResource.contactInfo && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">📞 Contact</h4>
-                    <p className="text-gray-600">{selectedResource.contactInfo}</p>
-                  </div>
-                )}
-                
-                {selectedResource.requirements && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">📋 Requirements</h4>
-                    <p className="text-gray-600">{selectedResource.requirements}</p>
-                  </div>
-                )}
+              <div className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold ${
+                showDetailModal.isAvailable 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-red-500 text-white'
+              }`}>
+                <span className="mr-2">{getStatusIcon(showDetailModal.isAvailable)}</span>
+                {showDetailModal.isAvailable ? 'Currently Available' : 'Currently Unavailable'}
               </div>
-              
-              <div className="flex gap-2 mt-6">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors">
-                  📞 Call Now
-                </button>
-                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors">
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-8 space-y-6">
+              {/* Location & Distance */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                  📍 Location & Distance
+                </h4>
+                <div className="space-y-2">
+                  <p className="text-gray-700 text-base leading-relaxed">{showDetailModal.address || "Address not provided"}</p>
+                  <p className="text-blue-600 font-semibold">{calculateDistance(showDetailModal)}</p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {showDetailModal.description && (
+                <div className="bg-blue-50 rounded-xl p-6">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    ℹ️ About This Resource
+                  </h4>
+                  <p className="text-gray-700 text-base leading-relaxed">{showDetailModal.description}</p>
+                </div>
+              )}
+
+              {/* Contact Information */}
+              {showDetailModal.contactInfo && (
+                <div className="bg-green-50 rounded-xl p-6">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    📞 Contact Information
+                  </h4>
+                  <p className="text-gray-700 text-base">{showDetailModal.contactInfo}</p>
+                </div>
+              )}
+
+              {/* Hours */}
+              {showDetailModal.hours && (
+                <div className="bg-yellow-50 rounded-xl p-6">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    🕒 Hours of Operation
+                  </h4>
+                  <p className="text-gray-700 text-base">{showDetailModal.hours}</p>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {showDetailModal.requirements && (
+                <div className="bg-orange-50 rounded-xl p-6">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    📋 Requirements & Eligibility
+                  </h4>
+                  <p className="text-gray-700 text-base leading-relaxed">{showDetailModal.requirements}</p>
+                </div>
+              )}
+
+              {/* Website */}
+              {showDetailModal.website && (
+                <div className="bg-purple-50 rounded-xl p-6">
+                  <h4 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                    🌐 Website
+                  </h4>
+                  <a 
+                    href={showDetailModal.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-purple-600 hover:text-purple-800 underline text-base"
+                  >
+                    {showDetailModal.website}
+                  </a>
+                </div>
+              )}
+
+              {/* Data Source */}
+              <div className="bg-gray-100 rounded-xl p-4">
+                <p className="text-gray-600 text-sm">
+                  📊 Data source: <span className="font-semibold capitalize">{showDetailModal.source || 'OpenStreetMap'}</span>
+                </p>
+              </div>
+            </div>
+            
+            {/* Modal Action Buttons */}
+            <div className="p-6 bg-gray-50 rounded-b-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {showDetailModal.contactInfo && (
+                  <a
+                    href={`tel:${showDetailModal.contactInfo.replace(/\D/g, '')}`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-semibold transition-colors text-center flex items-center justify-center gap-2"
+                  >
+                    📞 Call Now
+                  </a>
+                )}
+                
+                <button
+                  onClick={() => handleGetDirections(showDetailModal)}
+                  className="bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                >
                   🗺️ Get Directions
+                </button>
+                
+                <button
+                  onClick={() => handleShareResource(showDetailModal)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white py-4 px-6 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  📤 Share Resource
                 </button>
               </div>
             </div>
