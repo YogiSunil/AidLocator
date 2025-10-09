@@ -1,193 +1,328 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { useSelector } from 'react-redux';
-import axios from 'axios';
-import { findShortestPath } from '../utils/routeAlgorithm';
+﻿import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { useSelector } from "react-redux";
 
+// Fix Leaflet default markers
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
+});
+
+// Custom user location icon
+const userLocationIcon = new L.Icon({
+  iconUrl: "data:image/svg+xml;base64," + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+      <circle cx="16" cy="16" r="15" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="16" cy="16" r="5" fill="#FFFFFF"/>
+    </svg>
+  `),
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
 });
 
 function MapView() {
-  const [position, setPosition] = useState([51.505, -0.09]);
-  const [address, setAddress] = useState('');
-  const [filterType] = useState(''); // New state for filtering by type
-  const [searchedPosition, setSearchedPosition] = useState(null); // New state for searched location
-  const [routePath, setRoutePath] = useState([]); // New state for route path
-  const [filteredResources, setFilteredResources] = useState([]); // New state for filtered resources
+  const [userLocation, setUserLocation] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredResources, setFilteredResources] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [locationError, setLocationError] = useState(null);
   const { resources, mode } = useSelector((state) => state.resources);
 
+  // Get user location
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const userPosition = [pos.coords.latitude, pos.coords.longitude];
-        setPosition(userPosition); // Center the map on the user's location
-      },
-      () => alert("Geolocation denied. Showing default location.")
-    );
+    setIsLoading(true);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = [position.coords.latitude, position.coords.longitude];
+          setUserLocation(userPos);
+          setLocationError(null);
+          setIsLoading(false);
+        },
+        (error) => {
+          setLocationError("Unable to get your location. Using default location.");
+          setUserLocation([37.9735, -122.5311]);
+          setIsLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+      setUserLocation([37.9735, -122.5311]);
+      setIsLoading(false);
+    }
   }, []);
 
+  // Calculate distance between two points
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Filter resources
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const userPosition = [pos.coords.latitude, pos.coords.longitude];
-        setPosition(userPosition);
-
-        // Automatically filter resources near the user's location
-        const nearbyResources = resources.filter((r) => {
-          const distance = Math.sqrt(
-            Math.pow(r.latitude - userPosition[0], 2) + Math.pow(r.longitude - userPosition[1], 2)
-          );
-          return distance < 0.5; // Increased threshold for "nearby" to 0.5
-        });
-
-        setFilteredResources(nearbyResources);
-      },
-      () => alert("Geolocation denied. Showing default location.")
-    );
-  }, [resources]);
-
-  useEffect(() => {
-    if (position && searchedPosition) {
-      const start = position;
-      const end = searchedPosition;
-
-      // Convert coordinates to a graph-like structure for Dijkstra's algorithm
-      const graph = {
-        [start]: { [end]: Math.sqrt(Math.pow(end[0] - start[0], 2) + Math.pow(end[1] - start[1], 2)) },
-        [end]: { [start]: Math.sqrt(Math.pow(end[0] - start[0], 2) + Math.pow(end[1] - start[1], 2)) },
-      };
-
-      const { path } = findShortestPath(start, end, graph);
-
-      // Logic to display the path on the map
-      setRoutePath(path);
+    if (!userLocation || !resources) {
+      setFilteredResources([]);
+      return;
     }
-  }, [position, searchedPosition]);
 
-  const handleAddressSearch = async () => {
+    const filtered = resources.filter((resource) => {
+      const typeMatch = selectedFilter === "all" || resource.type === selectedFilter;
+      const modeMatch = mode === "need" ? resource.isAvailable : resource.isDonationPoint;
+      
+      return typeMatch && modeMatch;
+    });
+
+    filtered.sort((a, b) => {
+      const distanceA = calculateDistance(userLocation[0], userLocation[1], a.latitude, a.longitude);
+      const distanceB = calculateDistance(userLocation[0], userLocation[1], b.latitude, b.longitude);
+      return distanceA - distanceB;
+    });
+
+    setFilteredResources(filtered);
+  }, [userLocation, resources, selectedFilter, mode]);
+
+  // Handle location search
+  const handleLocationSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
     try {
-      const res = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-        params: { q: address, format: 'json' },
-      });
-
-      if (res.data.length > 0) {
-        const { lat, lon } = res.data[0];
-        const searchedPosition = [parseFloat(lat), parseFloat(lon)];
-        setSearchedPosition(searchedPosition); // Center the map on the searched location
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const newLocation = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        setUserLocation(newLocation);
+        setSearchQuery("");
       } else {
-        alert('Location not found.');
+        alert("Location not found. Please try a different search term.");
       }
     } catch (error) {
-      alert('Failed to fetch location.');
+      alert("Error searching for location. Please try again.");
     }
   };
 
-  useEffect(() => {
-    const filtered = resources.filter((r) => {
-      const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
-      const matchesType = filterType ? r.type.toLowerCase() === filterType.toLowerCase() : true;
-      return matchesMode && matchesType;
-    });
-    setFilteredResources(filtered);
-  }, [resources, mode, filterType]);
+  const filterOptions = [
+    { value: "all", label: " All Resources", color: "bg-gray-100" },
+    { value: "food", label: " Food", color: "bg-orange-100" },
+    { value: "shelter", label: " Shelter", color: "bg-green-100" },
+    { value: "medical", label: " Medical", color: "bg-red-100" },
+    { value: "clothing", label: " Clothing", color: "bg-purple-100" },
+    { value: "water", label: " Water", color: "bg-blue-100" },
+    { value: "emergency", label: " Emergency", color: "bg-red-100" }
+  ];
 
-  useEffect(() => {
-    if (!position) return;
-
-    const filtered = resources.filter((r) => {
-      const matchesMode = mode === 'need' ? r.isAvailable : r.isDonationPoint;
-      const matchesType = filterType ? r.type.toLowerCase() === filterType.toLowerCase() : true;
-
-      // Calculate distance in kilometers
-      const R = 6371;
-      const dLat = (r.latitude - position[0]) * Math.PI / 180;
-      const dLon = (r.longitude - position[1]) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(position[0] * Math.PI / 180) * Math.cos(r.latitude * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-
-      return matchesMode && matchesType && (searchedPosition ? true : distance < 10);
-    });
-    setFilteredResources(filtered);
-  }, [resources, mode, filterType, position, searchedPosition]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading map and finding your location...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-center p-5">
-        <div className="rounded-lg bg-gray-200 p-5">
-          <div className="flex">
-            <div className="flex w-10 items-center justify-center rounded-tl-lg rounded-bl-lg border-r border-gray-200 bg-white p-5">
-              <svg viewBox="0 0 20 20" aria-hidden="true" className="pointer-events-none absolute w-5 fill-gray-500 transition">
-                <path d="M16.72 17.78a.75.75 0 1 0 1.06-1.06l-1.06 1.06ZM9 14.5A5.5 5.5 0 0 1 3.5 9H2a7 7 0 0 0 7 7v-1.5ZM3.5 9A5.5 5.5 0 0 1 9 3.5V2a7 7 0 0 0-7 7h1.5ZM9 3.5A5.5 5.5 0 0 1 14.5 9H16a7 7 0 0 0-7-7v1.5Zm3.89 10.45 3.83 3.83 1.06-1.06-3.83-3.83-1.06 1.06ZM14.5 9a5.48 5.48 0 0 1-1.61 3.89l1.06 1.06A6.98 6.98 0 0 0 16 9h-1.5Zm-1.61 3.89A5.48 5.48 0 0 1 9 14.5V16a6.98 6.98 0 0 0 4.95-2.05l-1.06-1.06Z"></path>
-              </svg>
+    <div className="w-full h-full bg-gray-50">
+      {/* Header Controls */}
+      <div className="bg-white shadow-sm border-b p-4">
+        <div className="max-w-7xl mx-auto">
+          {locationError && (
+            <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-sm">
+               {locationError}
             </div>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Search location"
-              className="w-full max-w-[160px] bg-white pl-2 text-base font-semibold outline-0"
-            />
-            <input
-              type="button"
-              value="Search"
-              onClick={handleAddressSearch}
-              className="bg-blue-500 p-2 rounded-tr-lg rounded-br-lg text-white font-semibold hover:bg-blue-800 transition-colors"
-            />
+          )}
+          
+          {/* Search Bar */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="flex-1 flex">
+              <input
+                type="text"
+                placeholder="Search for a location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleLocationSearch()}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                onClick={handleLocationSearch}
+                className="px-6 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
+            
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+               My Location
+            </button>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedFilter(option.value)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  selectedFilter === option.value
+                    ? "bg-blue-600 text-white"
+                    : `${option.color} text-gray-700 hover:bg-opacity-80`
+                }`}
+              >
+                {option.label}
+                <span className="ml-1 text-xs opacity-75">
+                  ({option.value === "all" ? filteredResources.length : filteredResources.filter(r => r.type === option.value).length})
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            <span> Showing all available resources</span>
+            <span> {filteredResources.length} resources found</span>
+            {userLocation && (
+              <span> Your location: {userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}</span>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="flex">
-        <div className="flex-grow relative">
-          <MapContainer center={searchedPosition || position || [0, 0]} zoom={13} style={{ height: '75vh', width: '100%' }}>
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {position && (
-              <Marker position={position}>
-                <Popup>Your Current Location</Popup>
-              </Marker>
-            )}
-            {searchedPosition && (
-              <Marker position={searchedPosition}>
-                <Popup>Searched Location</Popup>
-              </Marker>
-            )}
-            {searchedPosition && position && (
-              <TileLayer
-                url={`https://router.project-osrm.org/route/v1/driving/${position[1]},${position[0]};${searchedPosition[1]},${searchedPosition[0]}?overview=full&geometries=geojson`}
-                attribution="&copy; OpenStreetMap contributors"
-              />
-            )}
-            {routePath.length > 0 && (
-              <Polyline
-                positions={routePath.map(([lat, lng]) => [lat, lng])}
-                color="blue"
-              />
-            )}
-            {filteredResources.map((r, index) => (
-              <Marker key={index} position={[r.latitude, r.longitude]}>
-                <Popup>
-                  <strong>{r.name}</strong><br />
-                  Type: {r.type}<br />
-                  Address: {r.address || 'N/A'}<br />
-                  {mode === 'need' && r.isAvailable && <span>✅ Available</span>}
-                  {mode === 'help' && r.isDonationPoint && <div>📦 Donation Point</div>}
+      {/* Map Container */}
+      {userLocation && (
+        <MapContainer
+          center={userLocation}
+          zoom={14}
+          style={{ height: "70vh", width: "100%" }}
+          className="z-10"
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* User Location Marker */}
+          <Marker position={userLocation} icon={userLocationIcon}>
+            <Popup>
+              <div className="text-center">
+                <strong> Your Location</strong>
+                <br />
+                <span className="text-sm text-gray-600">
+                  Lat: {userLocation[0].toFixed(4)}<br />
+                  Lon: {userLocation[1].toFixed(4)}
+                </span>
+              </div>
+            </Popup>
+          </Marker>
+
+          {/* Resource Markers */}
+          {filteredResources.map((resource, index) => {
+            const distance = calculateDistance(
+              userLocation[0], userLocation[1],
+              resource.latitude, resource.longitude
+            );
+            
+            return (
+              <Marker
+                key={resource.id || index}
+                position={[resource.latitude, resource.longitude]}
+              >
+                <Popup maxWidth={300}>
+                  <div className="p-2">
+                    <h3 className="font-bold text-lg mb-2">{resource.name}</h3>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium">Type:</span> {resource.type}
+                        {resource.isAvailable && <span className="ml-2 text-green-600"> Available</span>}
+                        {resource.isDonationPoint && <span className="ml-2 text-blue-600"> Donations</span>}
+                      </div>
+                      
+                      {resource.address && (
+                        <div>
+                          <span className="font-medium">Address:</span> {resource.address}
+                        </div>
+                      )}
+                      
+                      {resource.description && (
+                        <div>
+                          <span className="font-medium">Description:</span> {resource.description}
+                        </div>
+                      )}
+                      
+                      {resource.hours && (
+                        <div>
+                          <span className="font-medium">Hours:</span> {resource.hours}
+                        </div>
+                      )}
+                      
+                      {resource.contactInfo && (
+                        <div>
+                          <span className="font-medium">Contact:</span> {resource.contactInfo}
+                        </div>
+                      )}
+                      
+                      <div className="pt-2 border-t">
+                        <span className="font-medium">Distance:</span> {distance.toFixed(2)} km away
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const url = `https://www.google.com/maps/dir/${userLocation[0]},${userLocation[1]}/${resource.latitude},${resource.longitude}`;
+                          window.open(url, "_blank");
+                        }}
+                        className="w-full mt-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                         Get Directions
+                      </button>
+                    </div>
+                  </div>
                 </Popup>
               </Marker>
+            );
+          })}
+        </MapContainer>
+      )}
+
+      {/* Legend */}
+      <div className="bg-white border-t p-4">
+        <div className="max-w-7xl mx-auto">
+          <h3 className="font-medium text-gray-800 mb-2">Map Legend</h3>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
+              <span>Your Location</span>
+            </div>
+            {filterOptions.slice(1).map((option) => (
+              <div key={option.value} className="flex items-center gap-2">
+                <div className={`w-4 h-4 ${option.color} rounded-full`}></div>
+                <span>{option.label}</span>
+              </div>
             ))}
-          </MapContainer>
+          </div>
         </div>
       </div>
     </div>

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 
 const SearchInterface = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const dispatch = useDispatch();
 
   const handleSearch = (e) => {
     e.preventDefault();

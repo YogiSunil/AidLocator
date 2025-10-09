@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { setMode } from '../features/resources/resourceSlice';
 
 const QuickAccessCategories = () => {
-  const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState('');
 
   const categories = [
