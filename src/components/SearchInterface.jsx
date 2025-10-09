@@ -1,14 +1,65 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { updateResources } from '../features/resources/resourceSlice';
+import ResourceAPIService from '../services/resourceAPI';
+import SearchLoadingSpinner from './SearchLoadingSpinner';
 
 const SearchInterface = () => {
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
-      // Here you would dispatch a search action
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    
+    try {
+      // Get user location
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Determine resource type from search query
+      let resourceType = 'food'; // default
+      const query = searchQuery.toLowerCase();
+      
+      if (query.includes('shelter') || query.includes('housing') || query.includes('homeless')) {
+        resourceType = 'shelter';
+      } else if (query.includes('medical') || query.includes('health') || query.includes('clinic') || query.includes('doctor')) {
+        resourceType = 'medical';
+      } else if (query.includes('food') || query.includes('meal') || query.includes('hungry') || query.includes('eat')) {
+        resourceType = 'food';
+      }
+
+      // Search using multiple APIs
+      const resources = await ResourceAPIService.searchAllResources(latitude, longitude, resourceType);
+      
+      // Also try Nominatim search with the exact query
+      const nominatimResults = await ResourceAPIService.fetchNominatimSearch(latitude, longitude, searchQuery);
+      
+      // Combine and deduplicate results
+      const allResources = [...resources, ...nominatimResults];
+      const uniqueResources = ResourceAPIService.deduplicateAndSort(allResources, latitude, longitude);
+      
+      // Update Redux store
+      dispatch(updateResources(uniqueResources));
+      
+      console.log(`🔍 Found ${uniqueResources.length} resources for "${searchQuery}"`);
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('Search failed. Please check your location settings and try again.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -51,16 +102,28 @@ const SearchInterface = () => {
     "Legal aid for immigration"
   ];
 
+  // Handle suggested search clicks
+  const handleSuggestedSearch = (suggestion) => {
+    setSearchQuery(suggestion);
+    // Auto-submit the search
+    const fakeEvent = { preventDefault: () => {} };
+    handleSearch(fakeEvent);
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          🔍 AI-Powered Search
-        </h2>
-        <p className="text-gray-600">
-          Describe your situation in natural language
-        </p>
-      </div>
+    <>
+      {/* Show loading spinner when searching */}
+      {isSearching && <SearchLoadingSpinner text="Searching for resources..." />}
+      
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            🔍 AI-Powered Search
+          </h2>
+          <p className="text-gray-600">
+            Describe your situation in natural language
+          </p>
+        </div>
 
       <form onSubmit={handleSearch} className="mb-4">
         <div className="relative">
@@ -88,9 +151,20 @@ const SearchInterface = () => {
             </button>
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              disabled={isSearching}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400 flex items-center gap-2"
             >
-              Search
+              {isSearching ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Searching...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔍</span>
+                  <span>Search</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -103,8 +177,9 @@ const SearchInterface = () => {
           {suggestedSearches.map((suggestion, index) => (
             <button
               key={index}
-              onClick={() => setSearchQuery(suggestion)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm transition-colors border border-gray-300"
+              onClick={() => handleSuggestedSearch(suggestion)}
+              disabled={isSearching}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm transition-colors border border-gray-300 disabled:opacity-50"
             >
               {suggestion}
             </button>
@@ -141,7 +216,8 @@ const SearchInterface = () => {
           </label>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

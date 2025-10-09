@@ -130,19 +130,19 @@ function NearbyResourceList() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">
+    <div className="h-full flex flex-col max-h-screen xl:max-h-[calc(100vh-120px)]">
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0 z-20">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
           {mode === 'need' ? '🏥 Nearby Resources' : '🤝 Donation Points'}
         </h2>
-        <p className="text-lg text-gray-700 font-medium">
+        <p className="text-base text-gray-700 font-medium">
           {filteredResources.length} {filteredResources.length === 1 ? 'location' : 'locations'} found
         </p>
       </div>
 
-      {/* Filters and Controls */}
-      <div className="p-6 border-b border-gray-200 bg-white space-y-4">
+      {/* Filters and Controls - Sticky */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white sticky top-24 z-10">
         <div className="flex flex-wrap gap-4">
           <select
             value={filterType}
@@ -168,8 +168,8 @@ function NearbyResourceList() {
         </div>
       </div>
 
-      {/* Resource List */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Resource List - Scrollable */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {filteredResources.length === 0 ? (
           <div className="p-6 text-center">
             <div className="text-6xl mb-4">🔍</div>

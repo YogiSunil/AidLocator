@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import MapView from './components/Mapview';
 import AddResourceForm from './components/AddResourceForm';
+import AddResourceModal from './components/AddResourceModal';
 import NearbyResourceList from './components/NearbyResourceList';
 import Chatbot from './components/Chatbot';
 import EmergencyHeader from './components/EmergencyHeader';
-import QuickAccessCategories from './components/QuickAccessCategories';
-import LocationDisplay from './components/LocationDisplay';
 import SearchInterface from './components/SearchInterface';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMode } from './features/resources/resourceSlice';
@@ -15,6 +14,7 @@ function App() {
   const dispatch = useDispatch();
   const mode = useSelector((state) => state.resources.mode);
   const [showChatbot, setShowChatbot] = useState(false);
+  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -33,6 +33,13 @@ function App() {
             </div>
             <div className="flex items-center space-x-4">
               <button
+                onClick={() => setShowAddResourceModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full font-medium transition-colors flex items-center gap-2"
+              >
+                <span>➕</span>
+                <span className="hidden sm:inline">Add Resource</span>
+              </button>
+              <button
                 onClick={() => setShowChatbot(!showChatbot)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-medium transition-colors"
               >
@@ -47,9 +54,6 @@ function App() {
       </header>
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        {/* Location Display */}
-        <LocationDisplay />
-
         {/* Mode Toggle */}
         <div className="mb-6">
           <div className="flex bg-white rounded-xl border-2 border-blue-200 p-2 shadow-lg max-w-md mx-auto">
@@ -85,33 +89,53 @@ function App() {
         {/* Search Interface */}
         <SearchInterface />
 
-        {/* Quick Access Categories */}
-        {mode === 'need' && <QuickAccessCategories />}
-
         {/* Main Content Area */}
         <div className="mt-8">
           {mode === 'need' ? (
-            <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
-              <div className="flex-1 xl:w-2/3">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+            <div className="flex flex-col xl:flex-row gap-6 min-h-screen relative">
+              {/* Sticky Floating Map */}
+              <div className="xl:w-2/3 xl:sticky xl:top-4 xl:self-start floating-map">
+                <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 h-full">
                   <MapView />
                 </div>
               </div>
-              <div className="xl:w-1/3 min-w-0">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+              
+              {/* Scrollable Resource List */}
+              <div className="xl:w-1/3 min-w-0 flex-shrink-0">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden resource-scroll-area">
                   <NearbyResourceList />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
-              <div className="flex-1 xl:w-2/3">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
-                  <MapView />
-                </div>
+            <div className="space-y-6">
+              {/* Help Mode Header */}
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white text-center">
+                <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
+                  <span className="text-4xl">🤝</span>
+                  Help Your Community
+                </h2>
+                <p className="text-lg opacity-90">
+                  Add a resource to help others in need find the support they're looking for
+                </p>
               </div>
-              <div className="xl:w-1/3 min-w-0">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+
+              <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
+                <div className="flex-1 xl:w-2/3">
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+                    <div className="p-4 bg-gray-50 border-b">
+                      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <span>🗺️</span>
+                        Resource Locations
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        See where other resources are located and add yours to the map
+                      </p>
+                    </div>
+                    <MapView />
+                  </div>
+                </div>
+                <div className="xl:w-1/3 min-w-0">
                   <AddResourceForm />
                 </div>
               </div>
@@ -119,6 +143,18 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Floating Action Button for Add Resource */}
+      <button
+        onClick={() => setShowAddResourceModal(true)}
+        className="fixed bottom-20 right-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 z-40 group"
+        title="Add a new resource to help your community"
+      >
+        <span className="text-2xl">➕</span>
+        <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 bg-black text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          Add Resource
+        </div>
+      </button>
 
       {/* Chatbot */}
       {showChatbot && (
@@ -137,6 +173,12 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Add Resource Modal */}
+      <AddResourceModal 
+        isOpen={showAddResourceModal} 
+        onClose={() => setShowAddResourceModal(false)} 
+      />
 
       <AiLocationSearch />
     </div>

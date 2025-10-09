@@ -97,23 +97,7 @@ const QuickAccessCategories = () => {
         ))}
       </div>
 
-      {selectedCategory && (
-        <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-blue-800">
-                🔍 Searching for {categories.find(c => c.id === selectedCategory)?.name} resources near you...
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedCategory('')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Clear Filter
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
