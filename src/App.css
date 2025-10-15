@@ -1,117 +1,15 @@
-body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  background: linear-gradient(
-    135deg,
-    #ffe8f3,
-    #d9f3ff
-  ); /* Soft pastel gradient background */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+/* Only essential styles - most styling handled by Tailwind CSS */
+
+/* Leaflet map overrides */
+.leaflet-container {
+  font-family: inherit;
 }
 
-.container {
-  position: relative;
-  width: 100%; /* Fill the entire screen */
-  height: 100%;
-  overflow: hidden;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.2),
-    rgba(0, 0, 0, 0.1)
-  );
+/* Ensure proper z-index for modals */
+.modal-backdrop {
+  z-index: 1000;
 }
 
-.container::before,
-.container::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(
-    from 0deg,
-    #ff9aa2,
-    /* Soft pink */ #ffb7b2,
-    /* Light peach */ #ffdac1,
-    /* Pastel yellow */ #e2f0cb,
-    /* Mint green */ #a2e4ff,
-    /* Baby blue */ #c9afff,
-    /* Lavender */ #ffb7b2,
-    #ff9aa2
-  );
-  transform: translate(-50%, -50%);
-  animation: rotate 8s linear infinite;
-  filter: blur(50px); /* Create a soft glowing effect */
-  opacity: 0.8;
-}
-
-/* Secondary rotating layer for depth */
-.container::after {
-  width: 180%;
-  height: 180%;
-  animation: rotate-reverse 10s linear infinite;
-  opacity: 0.6;
-}
-
-/* Rotating animations */
-@keyframes rotate {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes rotate-reverse {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(-360deg);
-  }
-}
-
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.modal-content {
+  z-index: 1001;
 }

@@ -39,7 +39,7 @@ const SimpleRouting = ({ start, end, onRoutingComplete }) => {
         try {
           map.removeLayer(routeLayerRef.current);
         } catch (error) {
-          console.log('Layer cleanup error (safe to ignore):', error);
+          // Layer cleanup error - safe to ignore
         }
         routeLayerRef.current = null;
       }

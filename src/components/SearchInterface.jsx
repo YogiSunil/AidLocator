@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateResources } from '../features/resources/resourceSlice';
 import ResourceAPIService from '../services/resourceAPI';
-import SearchLoadingSpinner from './SearchLoadingSpinner';
 
 const SearchInterface = () => {
   const dispatch = useDispatch();
@@ -52,8 +51,6 @@ const SearchInterface = () => {
       
       // Update Redux store
       dispatch(updateResources(uniqueResources));
-      
-      console.log(`🔍 Found ${uniqueResources.length} resources for "${searchQuery}"`);
       
     } catch (error) {
       console.error('Search error:', error);
@@ -111,19 +108,15 @@ const SearchInterface = () => {
   };
 
   return (
-    <>
-      {/* Show loading spinner when searching */}
-      {isSearching && <SearchLoadingSpinner text="Searching for resources..." />}
-      
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            🔍 AI-Powered Search
-          </h2>
-          <p className="text-gray-600">
-            Describe your situation in natural language
-          </p>
-        </div>
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          🔍 AI-Powered Search
+        </h2>
+        <p className="text-gray-600">
+          Describe your situation in natural language
+        </p>
+      </div>
 
       <form onSubmit={handleSearch} className="mb-4">
         <div className="relative">
@@ -152,19 +145,9 @@ const SearchInterface = () => {
             <button
               type="submit"
               disabled={isSearching}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400 flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400"
             >
-              {isSearching ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Searching...</span>
-                </>
-              ) : (
-                <>
-                  <span>🔍</span>
-                  <span>Search</span>
-                </>
-              )}
+              {isSearching ? '🔍 Searching...' : 'Search'}
             </button>
           </div>
         </div>
@@ -216,8 +199,7 @@ const SearchInterface = () => {
           </label>
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 };
 

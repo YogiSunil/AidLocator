@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { setMode } from "../features/resources/resourceSlice";
-import MiniLoadingSpinner from "./MiniLoadingSpinner";
 
 const Chatbot = ({ onQuery }) => {
   const [input, setInput] = useState("");
@@ -202,8 +201,12 @@ const Chatbot = ({ onQuery }) => {
         {/* Typing indicator */}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-gray-800 px-4 py-2 rounded-2xl rounded-bl-sm">
-              <MiniLoadingSpinner text="Finding resources for you..." />
+            <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl rounded-bl-sm">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
             </div>
           </div>
         )}

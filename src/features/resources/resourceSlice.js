@@ -47,9 +47,9 @@ export const {
   setResourceError,
   clearResourceError,
   setMode,
-  editResource, // Added export for editResource
-  deleteResource, // Added export for deleteResource
-  updateResources, // Added export for updateResources
+  editResource,
+  deleteResource,
+  updateResources,
 } = resourceSlice.actions;
 
 export default resourceSlice.reducer;

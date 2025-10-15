@@ -8,7 +8,6 @@ import EmergencyHeader from './components/EmergencyHeader';
 import SearchInterface from './components/SearchInterface';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMode } from './features/resources/resourceSlice';
-import AiLocationSearch from './components/AiLocationSearch';
 
 function App() {
   const dispatch = useDispatch();
@@ -179,8 +178,6 @@ function App() {
         isOpen={showAddResourceModal} 
         onClose={() => setShowAddResourceModal(false)} 
       />
-
-      <AiLocationSearch />
     </div>
   );
 }
