@@ -194,7 +194,28 @@ function NearbyResourceList() {
                            resource.type === 'medical' ? '🏥' : 
                            resource.type === 'water' ? '💧' : '🆘'}
                         </span>
-                        <h3 className="font-bold text-xl text-gray-900 leading-relaxed">{resource.name}</h3>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-xl text-gray-900 leading-relaxed">{resource.name}</h3>
+                          
+                          {/* AI Recommendation Badges */}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {resource.isTopRecommendation && (
+                              <span className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center gap-1">
+                                🌟 AI Top Pick
+                              </span>
+                            )}
+                            {resource.isRecommended && !resource.isTopRecommendation && (
+                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md flex items-center gap-1">
+                                ⭐ Recommended
+                              </span>
+                            )}
+                            {resource.aiSuggestion && (
+                              <span className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                                🤖 {resource.aiSuggestion}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       
                       <div className="space-y-3 text-base">
