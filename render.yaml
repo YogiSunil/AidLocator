@@ -1,0 +1,17 @@
+# Render Static Site Configuration for AidLocator
+
+## Build Command
+npm run build
+
+## Publish Directory
+build
+
+## Node Version
+18
+
+## Environment Variables (Set these in Render dashboard)
+# REACT_APP_FINDHELP_API_KEY=your_api_key_here
+# REACT_APP_211_API_KEY=your_api_key_here
+
+## Auto-Deploy
+main branch
