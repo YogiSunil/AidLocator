@@ -98,19 +98,54 @@ class ResourceAPIService {
     }
   }
 
-  // OpenStreetMap Overpass API - Find amenities and services
+  // OpenStreetMap Overpass API - Find amenities and services with comprehensive search
   async fetchOpenStreetMapResources(latitude, longitude, amenityType, radius = 5000) {
     try {
-      // Overpass API query to find specific amenities within radius
-      const overpassQuery = `
-        [out:json][timeout:25];
-        (
-          node["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
-          way["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
-          relation["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
-        );
-        out geom;
-      `;
+      let overpassQuery;
+      
+      if (amenityType === 'social_facility') {
+        // Comprehensive search for all social facilities and related services
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["amenity"="social_facility"](around:${radius},${latitude},${longitude});
+            node["amenity"="community_centre"](around:${radius},${latitude},${longitude});
+            node["social_facility"](around:${radius},${latitude},${longitude});
+            node["amenity"="food_bank"](around:${radius},${latitude},${longitude});
+            way["amenity"="social_facility"](around:${radius},${latitude},${longitude});
+            way["social_facility"](around:${radius},${latitude},${longitude});
+            way["amenity"="food_bank"](around:${radius},${latitude},${longitude});
+            relation["amenity"="social_facility"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else if (amenityType === 'clinic') {
+        // Comprehensive healthcare search
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["amenity"="clinic"](around:${radius},${latitude},${longitude});
+            node["amenity"="hospital"](around:${radius},${latitude},${longitude});
+            node["healthcare"="clinic"](around:${radius},${latitude},${longitude});
+            node["healthcare"="community_health_centre"](around:${radius},${latitude},${longitude});
+            way["amenity"="clinic"](around:${radius},${latitude},${longitude});
+            way["healthcare"="clinic"](around:${radius},${latitude},${longitude});
+            relation["amenity"="clinic"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else {
+        // Standard single amenity search
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
+            way["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
+            relation["amenity"="${amenityType}"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      }
 
       const response = await fetch(this.baseUrls.overpass, {
         method: 'POST',
@@ -123,6 +158,7 @@ class ResourceAPIService {
       if (!response.ok) throw new Error(`OpenStreetMap Overpass API Error: ${response.status}`);
       
       const data = await response.json();
+      console.log(`🌍 Overpass API returned ${data.elements?.length || 0} elements for ${amenityType}`);
       return await this.normalizeOpenStreetMapData(data, amenityType);
     } catch (error) {
       console.error('OpenStreetMap Overpass API Error:', error);
@@ -175,24 +211,45 @@ class ResourceAPIService {
     }
     
     try {
-      // Try OpenStreetMap first (no API key required, more CORS-friendly)
-      const amenityTypes = {
-        food: 'food_bank',
-        shelter: 'social_facility', 
-        medical: 'clinic',
-        healthcare: 'clinic',
-        clothing: 'social_facility'
-      };
-      
+      // Try OpenStreetMap with multiple comprehensive searches
       let resources = [];
       
-      if (amenityTypes[resourceType]) {
-        try {
-          const osmResources = await this.fetchOpenStreetMapResources(latitude, longitude, amenityTypes[resourceType]);
-          resources = [...resources, ...osmResources];
-        } catch (error) {
-          console.log('OpenStreetMap API unavailable, using demo data');
+      try {
+        // Multi-source OpenStreetMap search for comprehensive results
+        const searchPromises = [];
+        
+        if (resourceType === 'food') {
+          // Food-related searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'food_bank'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
+            this.fetchNominatimSearch(latitude, longitude, 'food bank community kitchen soup kitchen'),
+            this.fetchNominatimSearch(latitude, longitude, 'Martin De Porres House food pantry')
+          );
+        } else if (resourceType === 'shelter') {
+          // Shelter-related searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
+            this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing'),
+            this.fetchNominatimSearch(latitude, longitude, 'community center shelter')
+          );
+        } else if (resourceType === 'medical' || resourceType === 'healthcare') {
+          // Healthcare-related searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'clinic'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'hospital'),
+            this.fetchNominatimSearch(latitude, longitude, 'community health center free clinic'),
+            this.fetchNominatimSearch(latitude, longitude, 'medical clinic healthcare')
+          );
         }
+        
+        // Execute all searches in parallel
+        const allResults = await Promise.all(searchPromises);
+        resources = allResults.flat();
+        
+        console.log(`🌍 OpenStreetMap found ${resources.length} real resources`);
+      } catch (error) {
+        console.log('OpenStreetMap API unavailable, using demo data');
       }
       
       // If we got some real data, cache and return it
