@@ -15,21 +15,21 @@ const EmergencyHeader = () => {
     <>
       {/* Emergency Banner */}
       <div className="bg-red-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center space-x-4">
-              <span className="animate-pulse text-lg">🚨</span>
-              <span className="font-semibold">CRISIS? GET IMMEDIATE HELP</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between py-1">
+            <div className="flex items-center space-x-2">
+              <span className="animate-pulse text-sm">🚨</span>
+              <span className="text-sm font-semibold">CRISIS? GET HELP</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <a href="tel:911" className="bg-red-800 hover:bg-red-900 px-4 py-1 rounded font-bold transition-colors">
-                📞 CALL 911
+            <div className="flex items-center space-x-2">
+              <a href="tel:911" className="bg-red-800 hover:bg-red-900 px-3 py-1 rounded text-sm font-bold transition-colors">
+                📞 911
               </a>
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="bg-red-700 hover:bg-red-800 px-3 py-1 rounded transition-colors"
+                className="bg-red-700 hover:bg-red-800 px-2 py-1 rounded text-sm transition-colors"
               >
-                {isExpanded ? '▼' : '▶'} More Help
+                {isExpanded ? '▼' : '▶'} More
               </button>
             </div>
           </div>
@@ -38,16 +38,16 @@ const EmergencyHeader = () => {
 
       {/* Expanded Emergency Contacts */}
       {isExpanded && (
-        <div className="bg-red-50 border-b-4 border-red-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-red-50 border-b-2 border-red-200">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
               {emergencyContacts.map((contact, index) => (
-                <div key={index} className="bg-white rounded-lg p-4 shadow border-l-4 border-red-500">
-                  <h3 className="font-bold text-red-800">{contact.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{contact.description}</p>
+                <div key={index} className="bg-white rounded p-3 shadow border-l-2 border-red-500">
+                  <h3 className="text-sm font-bold text-red-800">{contact.name}</h3>
+                  <p className="text-xs text-gray-600 mb-1">{contact.description}</p>
                   <a
                     href={`tel:${contact.number}`}
-                    className="inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-semibold transition-colors"
+                    className="inline-block bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-semibold transition-colors"
                   >
                     📞 {contact.number}
                   </a>

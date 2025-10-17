@@ -291,20 +291,10 @@ class ResourceAPIService {
             this.fetchNominatimSearch(latitude, longitude, 'church food program community meals')
           );
         } else if (resourceType === 'shelter') {
-          // Comprehensive shelter searches - cast very wide net
+          // Focused shelter searches to avoid rate limiting
           searchPromises.push(
             this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
-            this.fetchOpenStreetMapResources(latitude, longitude, 'community_centre'),
-            this.fetchOpenStreetMapResources(latitude, longitude, 'place_of_worship'), // Churches often provide shelter
-            this.fetchOpenStreetMapResources(latitude, longitude, 'amenity'), // Community centers, libraries
-            this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing transitional housing'),
-            this.fetchNominatimSearch(latitude, longitude, 'salvation army shelter ymca ywca community center'),
-            this.fetchNominatimSearch(latitude, longitude, 'women shelter family shelter overnight shelter'),
-            this.fetchNominatimSearch(latitude, longitude, 'church shelter mosque temple community housing'),
-            this.fetchNominatimSearch(latitude, longitude, 'housing authority public housing social services'),
-            this.fetchNominatimSearch(latitude, longitude, 'red cross shelter emergency accommodation crisis housing'),
-            this.fetchNominatimSearch(latitude, longitude, 'nonprofit organization community organization social service'),
-            this.fetchNominatimSearch(latitude, longitude, 'safe house domestic violence shelter recovery center')
+            this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing salvation army ymca')
           );
         } else if (resourceType === 'medical' || resourceType === 'healthcare') {
           // Healthcare-related searches
@@ -352,8 +342,21 @@ class ResourceAPIService {
           );
         }
         
-        // Execute all searches in parallel
-        const allResults = await Promise.all(searchPromises);
+        // Execute searches with delays to avoid rate limiting
+        const allResults = [];
+        for (let i = 0; i < searchPromises.length; i++) {
+          try {
+            // Add delay between requests to avoid 429 errors
+            if (i > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+            }
+            const result = await searchPromises[i];
+            allResults.push(result);
+          } catch (error) {
+            console.warn(`Search ${i} failed:`, error.message);
+            allResults.push([]); // Empty array for failed searches
+          }
+        }
         resources = allResults.flat();
         
       } catch (error) {
@@ -387,14 +390,14 @@ class ResourceAPIService {
         console.error('Broad search also failed:', broadError);
       }
       
-      // Only return demo data as absolute last resort
-      const demoResources = this.getDemoResources(latitude, longitude, resourceType);
-      return this.addAISuggestions(demoResources, latitude, longitude);
+      // Return empty array - no demo data, force real data only
+      console.warn('⚠️ No real data found, returning empty results to encourage API improvements');
+      return [];
       
     } catch (error) {
       console.error('All API searches failed:', error);
-      const demoResources = this.getDemoResources(latitude, longitude, resourceType);
-      return this.addAISuggestions(demoResources, latitude, longitude);
+      console.warn('⚠️ Critical API failure, returning empty results');
+      return [];
     }
   }
 
@@ -655,9 +658,9 @@ class ResourceAPIService {
       
       let address = this.buildAddressFromOSM(tags);
       
-      // If no address found, try reverse geocoding
+      // If no address found, create a generic one
       if (!address) {
-        address = await this.reverseGeocode(lat, lon);
+        address = `Near ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
       }
       
       const resource = {

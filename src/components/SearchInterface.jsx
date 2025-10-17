@@ -104,31 +104,31 @@ const SearchInterface = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          🔍 AI-Powered Search
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      <div className="text-center mb-3">
+        <h2 className="text-lg font-bold text-gray-800 mb-1">
+          🔍 AI Search
         </h2>
-        <p className="text-gray-600">
-          Describe your situation in natural language
+        <p className="text-sm text-gray-600">
+          Describe what you need
         </p>
       </div>
 
-      <form onSubmit={handleSearch} className="mb-4">
+      <form onSubmit={handleSearch} className="mb-3">
         <div className="relative">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="e.g., 'I need food assistance near downtown' or 'Emergency shelter for families'"
-            className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none transition-all"
+            placeholder="e.g., 'I need food assistance' or 'Emergency shelter'"
+            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all"
           />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
             <button
               type="button"
               onClick={startVoiceSearch}
               className={`
-                p-2 rounded-lg transition-colors
+                p-1.5 rounded-md transition-colors text-sm
                 ${isVoiceActive 
                   ? 'bg-red-500 text-white animate-pulse' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -141,9 +141,9 @@ const SearchInterface = () => {
             <button
               type="submit"
               disabled={isSearching}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:bg-gray-400"
             >
-              {isSearching ? '🔍 Searching...' : 'Search'}
+              {isSearching ? '🔍' : 'Search'}
             </button>
           </div>
         </div>
@@ -151,14 +151,14 @@ const SearchInterface = () => {
 
       {/* Quick Search Suggestions */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">💡 Try these searches:</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-xs font-medium text-gray-700 mb-2">💡 Quick searches:</p>
+        <div className="flex flex-wrap gap-1">
           {suggestedSearches.map((suggestion, index) => (
             <button
               key={index}
               onClick={() => handleSuggestedSearch(suggestion)}
               disabled={isSearching}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm transition-colors border border-gray-300 disabled:opacity-50"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs transition-colors border border-gray-300 disabled:opacity-50"
             >
               {suggestion}
             </button>
@@ -167,31 +167,31 @@ const SearchInterface = () => {
       </div>
 
       {/* Search Filters */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="font-medium text-gray-700">Quick Filters:</span>
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-700">Filters:</span>
           
-          <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option value="">All Distances</option>
-            <option value="0.5">Within 0.5 miles</option>
-            <option value="1">Within 1 mile</option>
-            <option value="5">Within 5 miles</option>
+          <select className="border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">Distance</option>
+            <option value="0.5">0.5 mi</option>
+            <option value="1">1 mi</option>
+            <option value="5">5 mi</option>
           </select>
           
-          <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option value="">Any Time</option>
+          <select className="border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">Time</option>
             <option value="open">Open Now</option>
-            <option value="24h">24/7 Available</option>
+            <option value="24h">24/7</option>
           </select>
           
-          <label className="flex items-center space-x-2">
-            <input type="checkbox" className="rounded" />
-            <span className="text-sm text-gray-700">No requirements</span>
+          <label className="flex items-center space-x-1">
+            <input type="checkbox" className="rounded text-xs" />
+            <span className="text-xs text-gray-700">No requirements</span>
           </label>
           
-          <label className="flex items-center space-x-2">
-            <input type="checkbox" className="rounded" />
-            <span className="text-sm text-gray-700">Family-friendly</span>
+          <label className="flex items-center space-x-1">
+            <input type="checkbox" className="rounded text-xs" />
+            <span className="text-xs text-gray-700">Family-friendly</span>
           </label>
         </div>
       </div>

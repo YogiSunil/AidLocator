@@ -132,22 +132,22 @@ function NearbyResourceList() {
   return (
     <div className="h-full flex flex-col max-h-screen xl:max-h-[calc(100vh-120px)]">
       {/* Header - Fixed at top */}
-      <div className="flex-shrink-0 p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0 z-20">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="flex-shrink-0 p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0 z-20">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">
           {mode === 'need' ? '🏥 Nearby Resources' : '🤝 Donation Points'}
         </h2>
-        <p className="text-base text-gray-700 font-medium">
+        <p className="text-sm text-gray-700 font-medium">
           {filteredResources.length} {filteredResources.length === 1 ? 'location' : 'locations'} found
         </p>
       </div>
 
       {/* Filters and Controls - Sticky */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white sticky top-24 z-10">
-        <div className="flex flex-wrap gap-4">
+      <div className="flex-shrink-0 p-2 border-b border-gray-200 bg-white sticky top-16 z-10">
+        <div className="flex flex-wrap gap-2">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="flex-1 min-w-40 px-4 py-3 text-base border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
+            className="flex-1 min-w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
           >
             <option value="">All Types</option>
             <option value="food">🍽️ Food</option>
@@ -161,10 +161,10 @@ function NearbyResourceList() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="flex-1 min-w-40 px-4 py-3 text-base border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
+            className="flex-1 min-w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
           >
-            <option value="distance">📍 By Distance</option>
-            <option value="name">📝 By Name</option>
+            <option value="distance">📍 Distance</option>
+            <option value="name">📝 Name</option>
           </select>
         </div>
       </div>
@@ -172,24 +172,24 @@ function NearbyResourceList() {
       {/* Resource List - Scrollable */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {filteredResources.length === 0 ? (
-          <div className="p-6 text-center">
-            <div className="text-6xl mb-4">🔍</div>
-            <p className="text-gray-500 text-lg font-medium">No resources found</p>
-            <p className="text-gray-400">Try adjusting your filters or search area</p>
+          <div className="p-4 text-center">
+            <div className="text-4xl mb-2">🔍</div>
+            <p className="text-gray-500 text-base font-medium">No resources found</p>
+            <p className="text-gray-400 text-sm">Try adjusting your filters</p>
           </div>
         ) : (
-          <div className="p-6 space-y-6">
+          <div className="p-3 space-y-3">
             {filteredResources.map((resource, idx) => (
               <div 
                 key={idx} 
-                className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+                className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
               >
                 {/* Resource Header */}
-                <div className="p-6">
+                <div className="p-4">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1 pr-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">
                           {resource.type === 'food' ? '🍽️' : 
                            resource.type === 'shelter' ? '🏠' : 
                            resource.type === 'medical' ? '🏥' : 
@@ -199,52 +199,52 @@ function NearbyResourceList() {
                            resource.type === 'other' ? '🏢' : '🆘'}
                         </span>
                         <div className="flex-1">
-                          <h3 className="font-bold text-xl text-gray-900 leading-relaxed">{resource.name}</h3>
+                          <h3 className="font-bold text-base text-gray-900 leading-tight">{resource.name}</h3>
                           
                           {/* AI Recommendation Badges */}
-                          <div className="flex flex-wrap gap-2 mt-2">
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {resource.isTopRecommendation && (
-                              <span className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md flex items-center gap-1">
-                                🌟 AI Top Pick
+                              <span className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">
+                                🌟 Top Pick
                               </span>
                             )}
                             {resource.isRecommended && !resource.isTopRecommendation && (
-                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md flex items-center gap-1">
+                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-semibold shadow-sm">
                                 ⭐ Recommended
                               </span>
                             )}
                             {resource.aiSuggestion && (
-                              <span className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                                🤖 {resource.aiSuggestion}
+                              <span className="bg-gray-100 border border-gray-300 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                                🤖 AI
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
                       
-                      <div className="space-y-3 text-base">
-                        <div className="flex items-start gap-3 text-gray-700">
-                          <span className="text-lg">📍</span>
-                          <span className="leading-relaxed">{resource.address || "Address not provided"}</span>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <span className="text-sm">📍</span>
+                          <span className="leading-tight">{resource.address || "Address not provided"}</span>
                         </div>
                         
-                        <div className="flex items-center gap-3 text-gray-700">
-                          <span className="text-lg">📏</span>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <span className="text-sm">📏</span>
                           <span className="font-medium">{calculateDistance(resource)}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className={`px-4 py-3 rounded-xl border text-base font-semibold shadow-sm ${getStatusColor(resource.isAvailable)}`}>
-                      <span className="text-lg mr-2">{getStatusIcon(resource.isAvailable)}</span>
+                    <div className={`px-3 py-2 rounded-lg border text-sm font-semibold shadow-sm ${getStatusColor(resource.isAvailable)}`}>
+                      <span className="text-sm mr-1">{getStatusIcon(resource.isAvailable)}</span>
                       {resource.isAvailable ? 'Available' : 'Unavailable'}
                     </div>
                   </div>
 
                   {/* Description */}
                   {resource.description && (
-                    <p className="text-gray-700 text-base mb-4 leading-relaxed">
-                      {resource.description}
+                    <p className="text-gray-600 text-sm mb-3 leading-normal">
+                      {resource.description.length > 100 ? `${resource.description.substring(0, 100)}...` : resource.description}
                     </p>
                   )}
 
@@ -258,35 +258,35 @@ function NearbyResourceList() {
 
                   {/* Contact Info */}
                   {resource.contactInfo && (
-                    <div className="mb-4">
-                      <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Contact</span>
-                      <p className="text-base text-blue-700 font-medium">{resource.contactInfo}</p>
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Contact</span>
+                      <p className="text-sm text-blue-700 font-medium">{resource.contactInfo}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
-                  <div className="flex flex-wrap gap-3">
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-2">
                     {resource.contactInfo && (
                       <a
                         href={`tel:${resource.contactInfo.replace(/\D/g, '')}`}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-1"
                       >
-                        📞 Call Now
+                        📞 Call
                       </a>
                     )}
                     
                     <button
                       onClick={() => handleGetDirections(resource)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-1"
                     >
-                      🗺️ Get Directions
+                      🗺️ Directions
                     </button>
                     
                     <button 
                       onClick={() => handleShowDetails(resource)}
-                      className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-1"
                     >
                       ℹ️ More Details
                     </button>

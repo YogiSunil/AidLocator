@@ -97,26 +97,26 @@ const AddResourceForm = ({ onClose }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-xl">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <span className="text-4xl"></span>
+    <div className="max-w-4xl mx-auto p-4 bg-white rounded-lg shadow-lg">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <span className="text-xl">🏢</span>
             Add New Resource
           </h2>
           {onClose && (
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors"
+              className="text-gray-500 hover:text-gray-700 text-lg font-bold transition-colors"
             >
-              
+              ✕
             </button>
           )}
         </div>
-        <p className="text-gray-600 text-lg">Help your community by adding a valuable resource</p>
+        <p className="text-gray-600 text-sm">Help your community by adding a resource</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Resource Type Selection */}
         <div className="space-y-3">
           <label className="block text-lg font-semibold text-gray-700">
