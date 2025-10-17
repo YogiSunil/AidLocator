@@ -249,23 +249,47 @@ class ResourceAPIService {
         
         console.log(`🌍 OpenStreetMap found ${resources.length} real resources`);
       } catch (error) {
-        console.log('OpenStreetMap API unavailable, using demo data');
+        console.error('OpenStreetMap API error:', error);
       }
       
       // If we got some real data, cache and return it
       if (resources.length > 0) {
         const sortedResources = this.deduplicateAndSort(resources, latitude, longitude);
         this.setCachedResources(latitude, longitude, resourceType, sortedResources);
+        console.log(`✅ Returning ${sortedResources.length} real-world resources`);
         return this.addAISuggestions(sortedResources, latitude, longitude);
       }
       
-      // Fallback to demo data
+      // Try to get broader search results if initial search found nothing
+      console.log('🔍 Expanding search with broader queries...');
+      try {
+        const broadSearchPromises = [
+          this.fetchNominatimSearch(latitude, longitude, 'community services social services'),
+          this.fetchNominatimSearch(latitude, longitude, 'nonprofit charity organization'),
+          this.fetchNominatimSearch(latitude, longitude, 'public services government assistance')
+        ];
+        
+        const broadResults = await Promise.all(broadSearchPromises);
+        const broadResources = broadResults.flat();
+        
+        if (broadResources.length > 0) {
+          const sortedBroadResources = this.deduplicateAndSort(broadResources, latitude, longitude);
+          this.setCachedResources(latitude, longitude, resourceType, sortedBroadResources);
+          console.log(`✅ Found ${sortedBroadResources.length} resources with broader search`);
+          return this.addAISuggestions(sortedBroadResources, latitude, longitude);
+        }
+      } catch (broadError) {
+        console.error('Broad search also failed:', broadError);
+      }
+      
+      // Only return demo data as absolute last resort
+      console.warn('⚠️ No real data found, returning demo data as fallback');
       const demoResources = this.getDemoResources(latitude, longitude, resourceType);
-      this.setCachedResources(latitude, longitude, resourceType, demoResources);
       return this.addAISuggestions(demoResources, latitude, longitude);
       
     } catch (error) {
-      console.error('All APIs failed, returning demo data:', error);
+      console.error('All API searches failed:', error);
+      console.warn('⚠️ Returning demo data as absolute last resort');
       const demoResources = this.getDemoResources(latitude, longitude, resourceType);
       return this.addAISuggestions(demoResources, latitude, longitude);
     }
