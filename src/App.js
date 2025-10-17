@@ -16,29 +16,70 @@ function App() {
   const [showChatbot, setShowChatbot] = useState(false);
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
 
-  // Load initial demo resources on app start
+  // Load initial resources with enhanced location accuracy
   useEffect(() => {
     const loadInitialResources = async () => {
       try {
-        // Get user location
+        console.log('🎯 Getting high-accuracy location...');
+        
+        // Enhanced geolocation with multiple fallback attempts
         const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            resolve, 
-            reject,
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-          );
+          let attempts = 0;
+          const maxAttempts = 3;
+          
+          const tryGetLocation = () => {
+            attempts++;
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              (error) => {
+                console.log(`📍 Location attempt ${attempts} failed:`, error.message);
+                
+                if (attempts < maxAttempts) {
+                  // Try again with less accuracy requirements
+                  setTimeout(tryGetLocation, 1000);
+                } else {
+                  reject(error);
+                }
+              },
+              {
+                enableHighAccuracy: attempts === 1, // First attempt with high accuracy
+                timeout: attempts === 1 ? 15000 : 8000, // Longer timeout for first attempt
+                maximumAge: attempts === 1 ? 30000 : 300000 // Allow older location on retries
+              }
+            );
+          };
+          
+          tryGetLocation();
         });
 
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
+        console.log(`✅ Location found: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} (±${accuracy}m)`);
         
-        // Load demo resources
+        // Load resources with user's actual location
         const resources = await ResourceAPIService.searchAllResources(latitude, longitude, 'food');
         dispatch(updateResources(resources));
         
-        console.log(`✅ Loaded ${resources.length} initial resources`);
+        console.log(`🏥 Loaded ${resources.length} resources near your location`);
       } catch (error) {
-        console.log('📍 Location not available, loading default resources');
-        // Load demo resources with default coordinates (San Francisco Bay Area)
+        console.log('📍 High-accuracy location unavailable, using IP-based location fallback');
+        
+        try {
+          // Try IP-based geolocation as fallback
+          const ipLocation = await fetch('https://ipapi.co/json/');
+          const ipData = await ipLocation.json();
+          
+          if (ipData.latitude && ipData.longitude) {
+            console.log(`🌐 Using IP location: ${ipData.city}, ${ipData.region}`);
+            const resources = await ResourceAPIService.searchAllResources(ipData.latitude, ipData.longitude, 'food');
+            dispatch(updateResources(resources));
+            return;
+          }
+        } catch (ipError) {
+          console.log('🌐 IP location also unavailable');
+        }
+        
+        // Final fallback to default coordinates (San Francisco Bay Area)
+        console.log('🏙️ Using default location: San Francisco Bay Area');
         const defaultLat = 37.9735;
         const defaultLng = -122.5311;
         const resources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'food');
