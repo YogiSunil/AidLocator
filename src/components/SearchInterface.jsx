@@ -39,15 +39,11 @@ const SearchInterface = () => {
         resourceType = 'food';
       }
 
-      // Search using multiple APIs
+      // Search using multiple APIs (now includes fallback demo data)
       const resources = await ResourceAPIService.searchAllResources(latitude, longitude, resourceType);
       
-      // Also try Nominatim search with the exact query
-      const nominatimResults = await ResourceAPIService.fetchNominatimSearch(latitude, longitude, searchQuery);
-      
-      // Combine and deduplicate results
-      const allResources = [...resources, ...nominatimResults];
-      const uniqueResources = ResourceAPIService.deduplicateAndSort(allResources, latitude, longitude);
+      // Use the resources directly (deduplication handled in the service)
+      const uniqueResources = resources;
       
       // Update Redux store
       dispatch(updateResources(uniqueResources));

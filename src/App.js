@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MapView from './components/Mapview';
 import AddResourceForm from './components/AddResourceForm';
 import AddResourceModal from './components/AddResourceModal';
@@ -7,13 +7,47 @@ import Chatbot from './components/Chatbot';
 import EmergencyHeader from './components/EmergencyHeader';
 import SearchInterface from './components/SearchInterface';
 import { useDispatch, useSelector } from 'react-redux';
-import { setMode } from './features/resources/resourceSlice';
+import { setMode, updateResources } from './features/resources/resourceSlice';
+import ResourceAPIService from './services/resourceAPI';
 
 function App() {
   const dispatch = useDispatch();
   const mode = useSelector((state) => state.resources.mode);
   const [showChatbot, setShowChatbot] = useState(false);
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
+
+  // Load initial demo resources on app start
+  useEffect(() => {
+    const loadInitialResources = async () => {
+      try {
+        // Get user location
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve, 
+            reject,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        });
+
+        const { latitude, longitude } = position.coords;
+        
+        // Load demo resources
+        const resources = await ResourceAPIService.searchAllResources(latitude, longitude, 'food');
+        dispatch(updateResources(resources));
+        
+        console.log(`✅ Loaded ${resources.length} initial resources`);
+      } catch (error) {
+        console.log('📍 Location not available, loading default resources');
+        // Load demo resources with default coordinates (San Francisco Bay Area)
+        const defaultLat = 37.9735;
+        const defaultLng = -122.5311;
+        const resources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'food');
+        dispatch(updateResources(resources));
+      }
+    };
+
+    loadInitialResources();
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
