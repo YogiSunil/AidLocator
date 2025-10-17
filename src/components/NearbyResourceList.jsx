@@ -155,6 +155,7 @@ function NearbyResourceList() {
             <option value="water">💧 Water</option>
             <option value="medical">🏥 Medical</option>
             <option value="clothing">👕 Clothing</option>
+            <option value="emergency">🚨 Emergency</option>
           </select>
           
           <select
@@ -192,7 +193,10 @@ function NearbyResourceList() {
                           {resource.type === 'food' ? '🍽️' : 
                            resource.type === 'shelter' ? '🏠' : 
                            resource.type === 'medical' ? '🏥' : 
-                           resource.type === 'water' ? '💧' : '🆘'}
+                           resource.type === 'water' ? '💧' : 
+                           resource.type === 'clothing' ? '👕' : 
+                           resource.type === 'emergency' ? '🚨' : 
+                           resource.type === 'other' ? '🏢' : '🆘'}
                         </span>
                         <div className="flex-1">
                           <h3 className="font-bold text-xl text-gray-900 leading-relaxed">{resource.name}</h3>

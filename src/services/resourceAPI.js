@@ -36,7 +36,6 @@ class ResourceAPIService {
     const cacheEntry = this.cache.get(cacheKey);
     
     if (this.isCacheValid(cacheEntry)) {
-      console.log(`🚀 Using cached resources for ${resourceType} (${cacheEntry.data.length} items)`);
       return cacheEntry.data;
     }
     return null;
@@ -49,7 +48,6 @@ class ResourceAPIService {
       data: resources,
       timestamp: Date.now()
     });
-    console.log(`💾 Cached ${resources.length} ${resourceType} resources`);
   }
 
   // 211 API - Official social services database
@@ -112,9 +110,11 @@ class ResourceAPIService {
             node["amenity"="community_centre"](around:${radius},${latitude},${longitude});
             node["social_facility"](around:${radius},${latitude},${longitude});
             node["amenity"="food_bank"](around:${radius},${latitude},${longitude});
+            node["social_facility:for"~"homeless|poor|unemployed|senior|child"](around:${radius},${latitude},${longitude});
             way["amenity"="social_facility"](around:${radius},${latitude},${longitude});
             way["social_facility"](around:${radius},${latitude},${longitude});
             way["amenity"="food_bank"](around:${radius},${latitude},${longitude});
+            way["amenity"="community_centre"](around:${radius},${latitude},${longitude});
             relation["amenity"="social_facility"](around:${radius},${latitude},${longitude});
           );
           out geom;
@@ -126,11 +126,74 @@ class ResourceAPIService {
           (
             node["amenity"="clinic"](around:${radius},${latitude},${longitude});
             node["amenity"="hospital"](around:${radius},${latitude},${longitude});
+            node["amenity"="pharmacy"](around:${radius},${latitude},${longitude});
+            node["amenity"="doctors"](around:${radius},${latitude},${longitude});
             node["healthcare"="clinic"](around:${radius},${latitude},${longitude});
             node["healthcare"="community_health_centre"](around:${radius},${latitude},${longitude});
+            node["healthcare"="centre"](around:${radius},${latitude},${longitude});
             way["amenity"="clinic"](around:${radius},${latitude},${longitude});
             way["healthcare"="clinic"](around:${radius},${latitude},${longitude});
+            way["amenity"="hospital"](around:${radius},${latitude},${longitude});
             relation["amenity"="clinic"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else if (amenityType === 'shop') {
+        // Search for thrift stores and charity shops for clothing
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["shop"="charity"](around:${radius},${latitude},${longitude});
+            node["shop"="second_hand"](around:${radius},${latitude},${longitude});
+            node["shop"="clothes"]["second_hand"="yes"](around:${radius},${latitude},${longitude});
+            node["operator"~"salvation|goodwill|thrift"](around:${radius},${latitude},${longitude});
+            way["shop"="charity"](around:${radius},${latitude},${longitude});
+            way["shop"="second_hand"](around:${radius},${latitude},${longitude});
+            relation["shop"="charity"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else if (amenityType === 'amenity') {
+        // General amenities search for water, public facilities
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["amenity"="drinking_water"](around:${radius},${latitude},${longitude});
+            node["amenity"="water_point"](around:${radius},${latitude},${longitude});
+            node["amenity"="fountain"](around:${radius},${latitude},${longitude});
+            node["amenity"="toilets"](around:${radius},${latitude},${longitude});
+            node["amenity"="public_bath"](around:${radius},${latitude},${longitude});
+            way["amenity"="drinking_water"](around:${radius},${latitude},${longitude});
+            way["amenity"="water_point"](around:${radius},${latitude},${longitude});
+            relation["amenity"="drinking_water"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else if (amenityType === 'emergency') {
+        // Emergency services search
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["emergency"](around:${radius},${latitude},${longitude});
+            node["amenity"="fire_station"](around:${radius},${latitude},${longitude});
+            node["amenity"="police"](around:${radius},${latitude},${longitude});
+            node["emergency"="emergency_ward_entrance"](around:${radius},${latitude},${longitude});
+            way["emergency"](around:${radius},${latitude},${longitude});
+            way["amenity"="fire_station"](around:${radius},${latitude},${longitude});
+            relation["emergency"](around:${radius},${latitude},${longitude});
+          );
+          out geom;
+        `;
+      } else if (amenityType === 'restaurant') {
+        // Search for soup kitchens and community dining (often tagged as restaurants)
+        overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["amenity"="restaurant"]["cuisine"="soup_kitchen"](around:${radius},${latitude},${longitude});
+            node["amenity"="restaurant"]["name"~"soup|kitchen|community|free"](around:${radius},${latitude},${longitude});
+            node["amenity"="fast_food"]["name"~"soup|kitchen|community|free"](around:${radius},${latitude},${longitude});
+            way["amenity"="restaurant"]["cuisine"="soup_kitchen"](around:${radius},${latitude},${longitude});
+            relation["amenity"="restaurant"]["cuisine"="soup_kitchen"](around:${radius},${latitude},${longitude});
           );
           out geom;
         `;
@@ -158,7 +221,6 @@ class ResourceAPIService {
       if (!response.ok) throw new Error(`OpenStreetMap Overpass API Error: ${response.status}`);
       
       const data = await response.json();
-      console.log(`🌍 Overpass API returned ${data.elements?.length || 0} elements for ${amenityType}`);
       return await this.normalizeOpenStreetMapData(data, amenityType);
     } catch (error) {
       console.error('OpenStreetMap Overpass API Error:', error);
@@ -202,8 +264,6 @@ class ResourceAPIService {
 
   // Combined search across multiple APIs with caching and fallback to demo data
   async searchAllResources(latitude, longitude, resourceType) {
-    console.log(`🔍 Searching for ${resourceType} resources near ${latitude}, ${longitude}`);
-    
     // Check cache first for faster loading
     const cachedResources = this.getCachedResources(latitude, longitude, resourceType);
     if (cachedResources) {
@@ -219,27 +279,67 @@ class ResourceAPIService {
         const searchPromises = [];
         
         if (resourceType === 'food') {
-          // Food-related searches
+          // Food-related searches - comprehensive approach
           searchPromises.push(
             this.fetchOpenStreetMapResources(latitude, longitude, 'food_bank'),
             this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
-            this.fetchNominatimSearch(latitude, longitude, 'food bank community kitchen soup kitchen'),
-            this.fetchNominatimSearch(latitude, longitude, 'Martin De Porres House food pantry')
+            this.fetchOpenStreetMapResources(latitude, longitude, 'restaurant'), // Soup kitchens often tagged as restaurants
+            this.fetchNominatimSearch(latitude, longitude, 'food bank pantry soup kitchen community kitchen'),
+            this.fetchNominatimSearch(latitude, longitude, 'salvation army food distribution'),
+            this.fetchNominatimSearch(latitude, longitude, 'church food program community meals')
           );
         } else if (resourceType === 'shelter') {
           // Shelter-related searches
           searchPromises.push(
             this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
-            this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing'),
-            this.fetchNominatimSearch(latitude, longitude, 'community center shelter')
+            this.fetchOpenStreetMapResources(latitude, longitude, 'tourism'), // Hostels sometimes used as shelters
+            this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing transitional housing'),
+            this.fetchNominatimSearch(latitude, longitude, 'salvation army shelter ymca community center'),
+            this.fetchNominatimSearch(latitude, longitude, 'women shelter family shelter overnight shelter')
           );
         } else if (resourceType === 'medical' || resourceType === 'healthcare') {
           // Healthcare-related searches
           searchPromises.push(
             this.fetchOpenStreetMapResources(latitude, longitude, 'clinic'),
             this.fetchOpenStreetMapResources(latitude, longitude, 'hospital'),
-            this.fetchNominatimSearch(latitude, longitude, 'community health center free clinic'),
-            this.fetchNominatimSearch(latitude, longitude, 'medical clinic healthcare')
+            this.fetchOpenStreetMapResources(latitude, longitude, 'pharmacy'),
+            this.fetchNominatimSearch(latitude, longitude, 'community health center free clinic public health'),
+            this.fetchNominatimSearch(latitude, longitude, 'medical clinic urgent care family health'),
+            this.fetchNominatimSearch(latitude, longitude, 'dental clinic mental health counseling')
+          );
+        } else if (resourceType === 'clothing') {
+          // Clothing-related searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'shop'), // Thrift stores, charity shops
+            this.fetchNominatimSearch(latitude, longitude, 'clothing bank thrift store charity shop'),
+            this.fetchNominatimSearch(latitude, longitude, 'salvation army goodwill clothing donation'),
+            this.fetchNominatimSearch(latitude, longitude, 'clothing closet community closet')
+          );
+        } else if (resourceType === 'water') {
+          // Water-related searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'amenity'), // Water fountains, taps
+            this.fetchNominatimSearch(latitude, longitude, 'water fountain drinking water public water'),
+            this.fetchNominatimSearch(latitude, longitude, 'water distribution emergency water'),
+            this.fetchNominatimSearch(latitude, longitude, 'community center water access')
+          );
+        } else if (resourceType === 'emergency') {
+          // Emergency services searches
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'emergency'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
+            this.fetchNominatimSearch(latitude, longitude, 'emergency services crisis center emergency assistance'),
+            this.fetchNominatimSearch(latitude, longitude, 'red cross emergency shelter disaster relief'),
+            this.fetchNominatimSearch(latitude, longitude, 'community emergency services crisis support')
+          );
+        } else {
+          // Default: search for all community services
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'community_centre'),
+            this.fetchNominatimSearch(latitude, longitude, 'community services social services'),
+            this.fetchNominatimSearch(latitude, longitude, 'nonprofit charity community center')
           );
         }
         
@@ -247,7 +347,6 @@ class ResourceAPIService {
         const allResults = await Promise.all(searchPromises);
         resources = allResults.flat();
         
-        console.log(`🌍 OpenStreetMap found ${resources.length} real resources`);
       } catch (error) {
         console.error('OpenStreetMap API error:', error);
       }
@@ -256,12 +355,10 @@ class ResourceAPIService {
       if (resources.length > 0) {
         const sortedResources = this.deduplicateAndSort(resources, latitude, longitude);
         this.setCachedResources(latitude, longitude, resourceType, sortedResources);
-        console.log(`✅ Returning ${sortedResources.length} real-world resources`);
         return this.addAISuggestions(sortedResources, latitude, longitude);
       }
       
       // Try to get broader search results if initial search found nothing
-      console.log('🔍 Expanding search with broader queries...');
       try {
         const broadSearchPromises = [
           this.fetchNominatimSearch(latitude, longitude, 'community services social services'),
@@ -275,7 +372,6 @@ class ResourceAPIService {
         if (broadResources.length > 0) {
           const sortedBroadResources = this.deduplicateAndSort(broadResources, latitude, longitude);
           this.setCachedResources(latitude, longitude, resourceType, sortedBroadResources);
-          console.log(`✅ Found ${sortedBroadResources.length} resources with broader search`);
           return this.addAISuggestions(sortedBroadResources, latitude, longitude);
         }
       } catch (broadError) {
@@ -283,13 +379,11 @@ class ResourceAPIService {
       }
       
       // Only return demo data as absolute last resort
-      console.warn('⚠️ No real data found, returning demo data as fallback');
       const demoResources = this.getDemoResources(latitude, longitude, resourceType);
       return this.addAISuggestions(demoResources, latitude, longitude);
       
     } catch (error) {
       console.error('All API searches failed:', error);
-      console.warn('⚠️ Returning demo data as absolute last resort');
       const demoResources = this.getDemoResources(latitude, longitude, resourceType);
       return this.addAISuggestions(demoResources, latitude, longitude);
     }
@@ -344,7 +438,6 @@ class ResourceAPIService {
       resource.isTopRecommendation = true;
     });
 
-    console.log(`🤖 AI processed ${sortedResources.length} resources with smart recommendations`);
     return sortedResources;
   }
 
@@ -558,10 +651,13 @@ class ResourceAPIService {
         address = await this.reverseGeocode(lat, lon);
       }
       
+      // Smart resource type detection based on tags and content
+      let resourceType = this.smartTypeDetection(tags, amenityType);
+      
       const resource = {
         id: `osm_${element.type}_${element.id}`,
         name: tags.name || tags.operator || tags.brand || `${amenityType.replace('_', ' ')} facility`,
-        type: this.mapAmenityToType(amenityType),
+        type: resourceType,
         address: address,
         latitude: parseFloat(lat),
         longitude: parseFloat(lon),
@@ -582,22 +678,54 @@ class ResourceAPIService {
   }
 
   normalizeNominatimData(apiResponse, searchQuery) {
-    return apiResponse.map(place => ({
-      id: `nominatim_${place.place_id}`,
-      name: place.display_name.split(',')[0], // First part is usually the name
-      type: this.mapNominatimToType(place.type, searchQuery),
-      address: place.display_name,
-      latitude: parseFloat(place.lat),
-      longitude: parseFloat(place.lon),
-      isAvailable: true, // Assume available unless specified otherwise
-      isDonationPoint: searchQuery.includes('donation') || searchQuery.includes('thrift'),
-      description: `${place.type} - ${place.class}`,
-      contactInfo: null,
-      requirements: null,
-      hours: null,
-      importance: place.importance, // Nominatim provides relevance score
-      source: 'nominatim'
-    }));
+    return apiResponse.map(place => {
+      const name = place.display_name.toLowerCase();
+      const searchLower = searchQuery.toLowerCase();
+      
+      // Smart type detection for Nominatim results
+      let resourceType = 'other';
+      if (searchLower.includes('food') || searchLower.includes('kitchen') || searchLower.includes('pantry') || 
+          name.includes('food') || name.includes('kitchen') || name.includes('pantry') || name.includes('meal')) {
+        resourceType = 'food';
+      } else if (searchLower.includes('shelter') || searchLower.includes('housing') || searchLower.includes('homeless') ||
+                 name.includes('shelter') || name.includes('housing') || name.includes('homeless')) {
+        resourceType = 'shelter';
+      } else if (searchLower.includes('health') || searchLower.includes('medical') || searchLower.includes('clinic') || 
+                 searchLower.includes('dental') || name.includes('clinic') || name.includes('hospital') || 
+                 name.includes('medical') || name.includes('health')) {
+        resourceType = 'medical';
+      } else if (searchLower.includes('clothing') || searchLower.includes('thrift') || searchLower.includes('charity') ||
+                 name.includes('clothing') || name.includes('thrift') || name.includes('goodwill') || 
+                 name.includes('salvation army')) {
+        resourceType = 'clothing';
+      } else if (searchLower.includes('water') || searchLower.includes('drinking') ||
+                 name.includes('water') || name.includes('fountain')) {
+        resourceType = 'water';
+      } else if (searchLower.includes('emergency') || searchLower.includes('crisis') || searchLower.includes('disaster') ||
+                 name.includes('emergency') || name.includes('crisis') || name.includes('fire') || name.includes('police')) {
+        resourceType = 'emergency';
+      } else if (searchLower.includes('community') || searchLower.includes('social') || searchLower.includes('nonprofit')) {
+        // Default community resources to shelter category for now
+        resourceType = 'shelter';
+      }
+      
+      return {
+        id: `nominatim_${place.place_id}`,
+        name: place.display_name.split(',')[0], // First part is usually the name
+        type: resourceType,
+        address: place.display_name,
+        latitude: parseFloat(place.lat),
+        longitude: parseFloat(place.lon),
+        isAvailable: true, // Assume available unless specified otherwise
+        isDonationPoint: searchQuery.includes('donation') || searchQuery.includes('thrift') || name.includes('donation'),
+        description: `${place.type} - ${place.class}`,
+        contactInfo: null,
+        requirements: null,
+        hours: null,
+        importance: place.importance, // Nominatim provides relevance score
+        source: 'nominatim'
+      };
+    });
   }
 
   normalizeHRSAData(apiResponse) {
@@ -638,22 +766,96 @@ class ResourceAPIService {
     return 'other';
   }
 
+  // Smart resource type detection based on OpenStreetMap tags
+  smartTypeDetection(tags, amenityType) {
+    const name = (tags.name || '').toLowerCase();
+    const description = (tags.description || '').toLowerCase();
+    const socialFacility = tags.social_facility || '';
+    const amenity = tags.amenity || '';
+    const shop = tags.shop || '';
+    const healthcare = tags.healthcare || '';
+    
+    // Food resources
+    if (amenity === 'food_bank' || 
+        socialFacility === 'food_bank' || 
+        socialFacility === 'soup_kitchen' ||
+        name.includes('food') || name.includes('pantry') || name.includes('kitchen') ||
+        name.includes('meal') || description.includes('food')) {
+      return 'food';
+    }
+    
+    // Shelter resources  
+    if (socialFacility === 'homeless_shelter' || 
+        socialFacility === 'emergency_shelter' ||
+        socialFacility === 'housing' ||
+        name.includes('shelter') || name.includes('housing') || 
+        name.includes('homeless') || name.includes('hostel') ||
+        amenity === 'shelter') {
+      return 'shelter';
+    }
+    
+    // Medical/Healthcare resources
+    if (amenity === 'clinic' || amenity === 'hospital' || amenity === 'pharmacy' ||
+        amenity === 'doctors' || healthcare === 'clinic' ||
+        healthcare === 'hospital' || healthcare === 'pharmacy' ||
+        name.includes('clinic') || name.includes('hospital') || name.includes('medical') ||
+        name.includes('health') || name.includes('dental') || name.includes('doctor')) {
+      return 'medical';
+    }
+    
+    // Clothing resources
+    if (socialFacility === 'clothing_bank' ||
+        shop === 'charity' || shop === 'second_hand' || shop === 'thrift' ||
+        name.includes('clothing') || name.includes('thrift') || name.includes('donation') ||
+        name.includes('goodwill') || name.includes('salvation army') ||
+        description.includes('clothing')) {
+      return 'clothing';
+    }
+    
+    // Water resources
+    if (amenity === 'drinking_water' || amenity === 'water_point' ||
+        amenity === 'fountain' || tags.drinking_water === 'yes' ||
+        name.includes('water') || name.includes('fountain') ||
+        description.includes('water')) {
+      return 'water';
+    }
+    
+    // Emergency resources
+    if (amenity === 'fire_station' || amenity === 'police' ||
+        tags.emergency || socialFacility === 'emergency' ||
+        name.includes('emergency') || name.includes('crisis') || name.includes('disaster') ||
+        name.includes('red cross') || description.includes('emergency')) {
+      return 'emergency';
+    }
+    
+    // Fallback to amenity-based mapping
+    return this.mapAmenityToType(amenityType);
+  }
+
   mapAmenityToType(amenityType) {
     const mapping = {
       'food_bank': 'food',
       'social_facility': 'shelter',
       'clinic': 'medical',
       'hospital': 'medical',
-      'pharmacy': 'medical'
+      'pharmacy': 'medical',
+      'doctors': 'medical',
+      'shop': 'clothing',
+      'amenity': 'water',
+      'emergency': 'emergency',
+      'restaurant': 'food',
+      'community_centre': 'shelter'
     };
     return mapping[amenityType] || 'other';
   }
 
   mapNominatimToType(placeType, searchQuery) {
-    if (searchQuery.includes('food') || placeType.includes('food')) return 'food';
-    if (searchQuery.includes('shelter') || searchQuery.includes('housing')) return 'shelter';
-    if (searchQuery.includes('health') || searchQuery.includes('medical') || searchQuery.includes('clinic')) return 'medical';
-    if (searchQuery.includes('clothing') || searchQuery.includes('thrift')) return 'clothing';
+    if (searchQuery.includes('food') || searchQuery.includes('kitchen') || searchQuery.includes('pantry') || placeType.includes('food')) return 'food';
+    if (searchQuery.includes('shelter') || searchQuery.includes('housing') || searchQuery.includes('homeless')) return 'shelter';
+    if (searchQuery.includes('health') || searchQuery.includes('medical') || searchQuery.includes('clinic') || searchQuery.includes('dental')) return 'medical';
+    if (searchQuery.includes('clothing') || searchQuery.includes('thrift') || searchQuery.includes('charity shop')) return 'clothing';
+    if (searchQuery.includes('water') || searchQuery.includes('drinking')) return 'water';
+    if (searchQuery.includes('emergency') || searchQuery.includes('crisis') || searchQuery.includes('disaster')) return 'emergency';
     return 'other';
   }
 

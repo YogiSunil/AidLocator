@@ -20,8 +20,6 @@ function App() {
   useEffect(() => {
     const loadInitialResources = async () => {
       try {
-        console.log('🎯 Getting high-accuracy location...');
-        
         // Enhanced geolocation with multiple fallback attempts
         const position = await new Promise((resolve, reject) => {
           let attempts = 0;
@@ -32,8 +30,6 @@ function App() {
             navigator.geolocation.getCurrentPosition(
               resolve,
               (error) => {
-                console.log(`📍 Location attempt ${attempts} failed:`, error.message);
-                
                 if (attempts < maxAttempts) {
                   // Try again with less accuracy requirements
                   setTimeout(tryGetLocation, 1000);
@@ -52,37 +48,30 @@ function App() {
           tryGetLocation();
         });
 
-        const { latitude, longitude, accuracy } = position.coords;
-        console.log(`✅ Location found: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} (±${accuracy}m)`);
-        
+        const { latitude, longitude } = position.coords;
+
         // Load resources with user's actual location
-        const resources = await ResourceAPIService.searchAllResources(latitude, longitude, 'food');
+        const resources = await ResourceAPIService.searchAllResources(latitude, longitude, 'all');       
         dispatch(updateResources(resources));
-        
-        console.log(`🏥 Loaded ${resources.length} resources near your location`);
-      } catch (error) {
-        console.log('📍 High-accuracy location unavailable, using IP-based location fallback');
-        
-        try {
+
+      } catch (error) {        try {
           // Try IP-based geolocation as fallback
           const ipLocation = await fetch('https://ipapi.co/json/');
           const ipData = await ipLocation.json();
           
           if (ipData.latitude && ipData.longitude) {
-            console.log(`🌐 Using IP location: ${ipData.city}, ${ipData.region}`);
-            const resources = await ResourceAPIService.searchAllResources(ipData.latitude, ipData.longitude, 'food');
+            const resources = await ResourceAPIService.searchAllResources(ipData.latitude, ipData.longitude, 'all');
             dispatch(updateResources(resources));
             return;
           }
         } catch (ipError) {
-          console.log('🌐 IP location also unavailable');
+          // Final fallback to default coordinates (San Francisco Bay Area)
         }
         
         // Final fallback to default coordinates (San Francisco Bay Area)
-        console.log('🏙️ Using default location: San Francisco Bay Area');
         const defaultLat = 37.9735;
         const defaultLng = -122.5311;
-        const resources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'food');
+        const resources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'all');
         dispatch(updateResources(resources));
       }
     };
