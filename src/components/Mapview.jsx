@@ -281,32 +281,72 @@ function MapView() {
             </div>
           )}
           
-          {/* Search Bar */}
+          {/* Enhanced Search Bar with Location Controls */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1 flex">
               <input
                 type="text"
-                placeholder="Search for a location..."
+                placeholder="🔍 Search for a location or address..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleLocationSearch()}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500 text-base"
               />
               <button
                 onClick={handleLocationSearch}
-                className="px-6 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
-                Search
+                🔍 Search
               </button>
             </div>
             
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-               My Location
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                title="Get current location"
+              >
+                📍 My Location
+              </button>
+              
+              <button
+                onClick={clearDirections}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+                title="Clear directions"
+              >
+                🗑️ Clear Route
+              </button>
+            </div>
           </div>
+
+          {/* Route Information Display */}
+          {routingInfo && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl">🛣️</span>
+                  <div>
+                    <div className="font-semibold text-blue-800">Route Information</div>
+                    <div className="text-sm text-blue-600">
+                      Distance: <span className="font-medium">{routingInfo.distance} km</span>
+                      {routingInfo.time !== 'Unknown' && (
+                        <span> • Estimated time: <span className="font-medium">{routingInfo.time} min</span></span>
+                      )}
+                      {routingInfo.error && (
+                        <span className="text-orange-600"> • {routingInfo.error}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={clearDirections}
+                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  ✖️
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2 mb-4">
