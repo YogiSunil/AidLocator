@@ -18,6 +18,12 @@ class ResourceAPIService {
     this.cache = new Map();
     this.cacheExpiry = 5 * 60 * 1000; // 5 minutes cache
     this.locationCache = new Map();
+    
+    // Rate limiting to prevent API abuse
+    this.lastApiCall = 0;
+    this.minDelayBetweenCalls = 2000; // 2 seconds minimum between API calls
+    this.apiQueue = [];
+    this.isProcessingQueue = false;
   }
 
   // Generate cache key based on location and resource type
@@ -48,6 +54,21 @@ class ResourceAPIService {
       data: resources,
       timestamp: Date.now()
     });
+  }
+
+  // Rate-limited API call wrapper
+  async rateLimitedFetch(url, options = {}) {
+    const now = Date.now();
+    const timeSinceLastCall = now - this.lastApiCall;
+    
+    if (timeSinceLastCall < this.minDelayBetweenCalls) {
+      const waitTime = this.minDelayBetweenCalls - timeSinceLastCall;
+      console.log(`Rate limiting: waiting ${waitTime}ms before API call`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastApiCall = Date.now();
+    return fetch(url, options);
   }
 
   // 211 API - Official social services database
@@ -210,7 +231,7 @@ class ResourceAPIService {
         `;
       }
 
-      const response = await fetch(this.baseUrls.overpass, {
+      const response = await this.rateLimitedFetch(this.baseUrls.overpass, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain',
@@ -233,7 +254,7 @@ class ResourceAPIService {
     try {
       // Wider bounding box for more comprehensive search (roughly 20km radius)
       const boundingBoxSize = 0.2; // Increased from 0.1 for wider search
-      const response = await fetch(
+      const response = await this.rateLimitedFetch(
         `${this.baseUrls.nominatim}/search?format=json&q=${encodeURIComponent(searchQuery)}&viewbox=${longitude-boundingBoxSize},${latitude+boundingBoxSize},${longitude+boundingBoxSize},${latitude-boundingBoxSize}&bounded=1&limit=50&addressdetails=1&extratags=1`
       );
 
@@ -296,6 +317,13 @@ class ResourceAPIService {
             this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
             this.fetchNominatimSearch(latitude, longitude, 'homeless shelter emergency housing salvation army ymca')
           );
+        } else if (resourceType === 'emergency') {
+          // Emergency services - hospitals, fire stations, police, urgent care
+          searchPromises.push(
+            this.fetchOpenStreetMapResources(latitude, longitude, 'hospital'),
+            this.fetchOpenStreetMapResources(latitude, longitude, 'emergency'),
+            this.fetchNominatimSearch(latitude, longitude, 'emergency room hospital urgent care emergency department')
+          );
         } else if (resourceType === 'medical' || resourceType === 'healthcare') {
           // Healthcare-related searches
           searchPromises.push(
@@ -333,27 +361,30 @@ class ResourceAPIService {
             this.fetchNominatimSearch(latitude, longitude, 'community emergency services crisis support')
           );
         } else {
-          // Default: search for all community services
+          // Default: minimal search to avoid rate limiting
           searchPromises.push(
             this.fetchOpenStreetMapResources(latitude, longitude, 'social_facility'),
-            this.fetchOpenStreetMapResources(latitude, longitude, 'community_centre'),
-            this.fetchNominatimSearch(latitude, longitude, 'community services social services'),
-            this.fetchNominatimSearch(latitude, longitude, 'nonprofit charity community center')
+            this.fetchNominatimSearch(latitude, longitude, 'community services emergency hospital food shelter')
           );
         }
         
-        // Execute searches with delays to avoid rate limiting
+        // Execute searches with longer delays to avoid rate limiting
         const allResults = [];
         for (let i = 0; i < searchPromises.length; i++) {
           try {
-            // Add delay between requests to avoid 429 errors
+            // Add longer delay between requests to avoid 429 errors
             if (i > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+              await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
             }
             const result = await searchPromises[i];
             allResults.push(result);
           } catch (error) {
             console.warn(`Search ${i} failed:`, error.message);
+            // If we get a 429 error, wait even longer before continuing
+            if (error.message.includes('429')) {
+              console.warn('Rate limited! Waiting 10 seconds before continuing...');
+              await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second delay for rate limits
+            }
             allResults.push([]); // Empty array for failed searches
           }
         }
@@ -390,14 +421,42 @@ class ResourceAPIService {
         console.error('Broad search also failed:', broadError);
       }
       
-      // Return empty array - no demo data, force real data only
-      console.warn('⚠️ No real data found, returning empty results to encourage API improvements');
-      return [];
+      // Return rate limit message for user
+      console.warn('⚠️ API rate limited - please wait and try again');
+      return [{
+        id: 'rate_limit_msg',
+        name: '⚠️ Service temporarily unavailable',
+        type: 'emergency',
+        address: 'OpenStreetMap APIs are rate limited',
+        latitude: latitude,
+        longitude: longitude,
+        isAvailable: false,
+        isDonationPoint: false,
+        description: 'The mapping services are temporarily overloaded. Please wait a few minutes and try again, or call 211 for immediate assistance.',
+        contactInfo: '211',
+        requirements: 'Wait 2-3 minutes before searching again',
+        hours: 'Service restoration: 2-3 minutes',
+        source: 'system'
+      }];
       
     } catch (error) {
       console.error('All API searches failed:', error);
-      console.warn('⚠️ Critical API failure, returning empty results');
-      return [];
+      console.warn('⚠️ Critical API failure');
+      return [{
+        id: 'error_msg',
+        name: '🚨 Emergency: Call 211 or 911',
+        type: 'emergency', 
+        address: 'Service temporarily unavailable',
+        latitude: latitude,
+        longitude: longitude,
+        isAvailable: true,
+        isDonationPoint: false,
+        description: 'Our mapping service is experiencing issues. For immediate help, call 211 (community resources) or 911 (emergencies).',
+        contactInfo: '211 or 911',
+        requirements: 'None - free service',
+        hours: '24/7 available by phone',
+        source: 'emergency'
+      }];
     }
   }
 

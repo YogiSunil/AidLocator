@@ -31,7 +31,9 @@ const SearchInterface = () => {
       let resourceType = 'food'; // default
       const query = searchQuery.toLowerCase();
       
-      if (query.includes('shelter') || query.includes('housing') || query.includes('homeless')) {
+      if (query.includes('emergency') || query.includes('hospital') || query.includes('urgent care') || query.includes('911') || query.includes('crisis')) {
+        resourceType = 'emergency';
+      } else if (query.includes('shelter') || query.includes('housing') || query.includes('homeless')) {
         resourceType = 'shelter';
       } else if (query.includes('medical') || query.includes('health') || query.includes('clinic') || query.includes('doctor')) {
         resourceType = 'medical';
@@ -88,11 +90,11 @@ const SearchInterface = () => {
   };
 
   const suggestedSearches = [
+    "Emergency hospital near me",
     "Food bank open now",
     "Emergency shelter with beds",
-    "Free medical clinic",
-    "Job training programs",
-    "Legal aid for immigration"
+    "Urgent care clinic",
+    "Free medical clinic"
   ];
 
   // Handle suggested search clicks
