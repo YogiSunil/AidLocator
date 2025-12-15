@@ -51,8 +51,8 @@ function App() {
         const { latitude, longitude } = position.coords;
 
         // Load resources with user's actual location
-        const resources = await ResourceAPIService.searchAllResources(latitude, longitude, 'all');       
-        dispatch(updateResources(resources));
+        const browserLocatedResources = await ResourceAPIService.searchAllResources(latitude, longitude, 'all');      
+        dispatch(updateResources(browserLocatedResources));
 
       } catch (error) {        try {
           // Try IP-based geolocation as fallback
@@ -60,8 +60,8 @@ function App() {
           const ipData = await ipLocation.json();
           
           if (ipData.latitude && ipData.longitude) {
-            const resources = await ResourceAPIService.searchAllResources(ipData.latitude, ipData.longitude, 'all');
-            dispatch(updateResources(resources));
+            const ipLocatedResources = await ResourceAPIService.searchAllResources(ipData.latitude, ipData.longitude, 'all');
+            dispatch(updateResources(ipLocatedResources));
             return;
           }
         } catch (ipError) {
@@ -71,8 +71,8 @@ function App() {
         // Final fallback to default coordinates (San Francisco Bay Area)
         const defaultLat = 37.9735;
         const defaultLng = -122.5311;
-        const resources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'all');
-        dispatch(updateResources(resources));
+        const defaultResources = await ResourceAPIService.searchAllResources(defaultLat, defaultLng, 'all');
+        dispatch(updateResources(defaultResources));
       }
     };
 

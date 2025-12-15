@@ -9,7 +9,7 @@ const SearchInterface = () => {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = async (e) => {
+  const handleResourceSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     
@@ -102,7 +102,7 @@ const SearchInterface = () => {
     setSearchQuery(suggestion);
     // Auto-submit the search
     const fakeEvent = { preventDefault: () => {} };
-    handleSearch(fakeEvent);
+    handleResourceSearch(fakeEvent);
   };
 
   return (
@@ -116,7 +116,7 @@ const SearchInterface = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSearch} className="mb-3">
+      <form onSubmit={handleResourceSearch} className="mb-3">
         <div className="relative">
           <input
             type="text"

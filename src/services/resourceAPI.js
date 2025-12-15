@@ -295,7 +295,7 @@ class ResourceAPIService {
     
     try {
       // Try OpenStreetMap with multiple comprehensive searches
-      let resources = [];
+      let collectedSearchResults = [];
       
       try {
         // Multi-source OpenStreetMap search for comprehensive results
@@ -388,17 +388,17 @@ class ResourceAPIService {
             allResults.push([]); // Empty array for failed searches
           }
         }
-        resources = allResults.flat();
+        collectedSearchResults = allResults.flat();
         
       } catch (error) {
         console.error('OpenStreetMap API error:', error);
       }
       
       // If we got some real data, cache and return it
-      if (resources.length > 0) {
-        const sortedResources = this.deduplicateAndSort(resources, latitude, longitude);
-        this.setCachedResources(latitude, longitude, resourceType, sortedResources);
-        return this.addAISuggestions(sortedResources, latitude, longitude);
+      if (collectedSearchResults.length > 0) {
+        const sortedOpenStreetMapResources = this.deduplicateAndSort(collectedSearchResults, latitude, longitude);
+        this.setCachedResources(latitude, longitude, resourceType, sortedOpenStreetMapResources);
+        return this.addAISuggestions(sortedOpenStreetMapResources, latitude, longitude);
       }
       
       // Try to get broader search results if initial search found nothing
@@ -715,18 +715,15 @@ class ResourceAPIService {
       
       if (!lat || !lon) continue;
       
-      let address = this.buildAddressFromOSM(tags);
-      
-      // If no address found, create a generic one
-      if (!address) {
-        address = `Near ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-      }
+      const structuredAddress = this.buildAddressFromOSM(tags);
+      const fallbackAddress = structuredAddress ? null : `Near ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      const resolvedAddress = structuredAddress || fallbackAddress;
       
       const resource = {
         id: `osm_${element.type}_${element.id}`,
         name: tags.name || tags.operator || tags.brand || `${amenityType.replace('_', ' ')} facility`,
         type: this.mapAmenityToType(amenityType),
-        address: address,
+        address: resolvedAddress,
         latitude: parseFloat(lat),
         longitude: parseFloat(lon),
         isAvailable: !tags.closed && tags.opening_hours !== 'closed',
@@ -796,9 +793,10 @@ class ResourceAPIService {
 
   mapCategoryToType(category) {
     // Map FindHelp categories to your app's types
-    if (category.toLowerCase().includes('food')) return 'food';
-    if (category.toLowerCase().includes('housing')) return 'shelter';
-    if (category.toLowerCase().includes('health')) return 'medical';
+    const normalizedCategory = (category || '').toLowerCase();
+    if (normalizedCategory.includes('food')) return 'food';
+    if (normalizedCategory.includes('housing')) return 'shelter';
+    if (normalizedCategory.includes('health')) return 'medical';
     return 'other';
   }
 
@@ -820,12 +818,15 @@ class ResourceAPIService {
   }
 
   mapNominatimToType(placeType, searchQuery) {
-    if (searchQuery.includes('food') || searchQuery.includes('kitchen') || searchQuery.includes('pantry') || placeType.includes('food')) return 'food';
-    if (searchQuery.includes('shelter') || searchQuery.includes('housing') || searchQuery.includes('homeless')) return 'shelter';
-    if (searchQuery.includes('health') || searchQuery.includes('medical') || searchQuery.includes('clinic') || searchQuery.includes('dental')) return 'medical';
-    if (searchQuery.includes('clothing') || searchQuery.includes('thrift') || searchQuery.includes('charity shop')) return 'clothing';
-    if (searchQuery.includes('water') || searchQuery.includes('drinking')) return 'water';
-    if (searchQuery.includes('emergency') || searchQuery.includes('crisis') || searchQuery.includes('disaster')) return 'emergency';
+    const normalizedQuery = (searchQuery || '').toLowerCase();
+    const normalizedPlaceType = (placeType || '').toLowerCase();
+
+    if (normalizedQuery.includes('food') || normalizedQuery.includes('kitchen') || normalizedQuery.includes('pantry') || normalizedPlaceType.includes('food')) return 'food';
+    if (normalizedQuery.includes('shelter') || normalizedQuery.includes('housing') || normalizedQuery.includes('homeless')) return 'shelter';
+    if (normalizedQuery.includes('health') || normalizedQuery.includes('medical') || normalizedQuery.includes('clinic') || normalizedQuery.includes('dental')) return 'medical';
+    if (normalizedQuery.includes('clothing') || normalizedQuery.includes('thrift') || normalizedQuery.includes('charity shop')) return 'clothing';
+    if (normalizedQuery.includes('water') || normalizedQuery.includes('drinking')) return 'water';
+    if (normalizedQuery.includes('emergency') || normalizedQuery.includes('crisis') || normalizedQuery.includes('disaster')) return 'emergency';
     return 'other';
   }
 
